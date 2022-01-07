@@ -1,16 +1,20 @@
 package main
 
-import "fmt"
+import (
+	"os"
 
-const (
-	Unknown = iota
-	Starting
-	Started
-	Running
-	Stopping
-	Stopped
+	"github.com/philippseith/signalr"
+	"github.com/tgg/app-array-supervisor/remote"
 )
 
+type Supervisor struct {
+	signalr.Hub
+}
+
+func (s *Supervisor) RunCommand(command string, args []string) {
+
+}
+
 func main() {
-	fmt.Println("app-array-supervisor")
+	remote.NewClient("localhost", "22", os.Args[1], os.Args[2])
 }

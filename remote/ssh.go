@@ -1,9 +1,10 @@
 package remote
 
 import (
-	"bytes"
 	"fmt"
+	"io"
 	"log"
+	"os"
 
 	"golang.org/x/crypto/ssh"
 )
@@ -37,10 +38,14 @@ func NewClient(host string, port string, user string, password string) {
 
 	// Once a Session is created, you can execute a single command on
 	// the remote side using the Run method.
-	var b bytes.Buffer
-	session.Stdout = &b
+	stdout, err := session.StdoutPipe()
+	if err != nil {
+		log.Fatalf("Unable to setup stdout for session: %v\n", err)
+	}
+
+	go io.Copy(os.Stdout, stdout)
+
 	if err := session.Run("env"); err != nil {
 		log.Fatal("Failed to run: " + err.Error())
 	}
-	fmt.Print(b.String())
 }

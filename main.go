@@ -14,6 +14,7 @@ import (
 var upgrader = websocket.Upgrader{
 	ReadBufferSize:  1024,
 	WriteBufferSize: 1024,
+	CheckOrigin:     func(r *http.Request) bool { return true },
 }
 
 type wsWriter struct {
@@ -43,7 +44,11 @@ func main() {
 	defer client.Close()
 
 	http.HandleFunc("/shell", func(w http.ResponseWriter, r *http.Request) {
-		conn, _ := upgrader.Upgrade(w, r, nil) // error ignored for sake of simplicity
+		conn, err := upgrader.Upgrade(w, r, nil) // error ignored for sake of simplicity
+
+		if err != nil {
+			log.Fatalln(err)
+		}
 
 		for {
 			// Read message from browser

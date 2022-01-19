@@ -31,10 +31,10 @@ type Command struct {
 
 type CommandMap map[string]Command
 
-type TagMap map[string][]string
+type TagMap map[string]string
 
 type Element struct {
-	Name string  `json:"name"`
+	Id   string  `json:"id"`
 	Tags *TagMap `json:"tags,omitempty"`
 }
 
@@ -90,6 +90,7 @@ type Application struct {
 func (e *Environment) MarshalJSON() ([]byte, error) {
 	// We need to encode the Context, then add Id
 	copy := make(Context)
+	// Warning: we are not doing a deep copy here.
 	for key, value := range e.Context {
 		copy[key] = value
 	}

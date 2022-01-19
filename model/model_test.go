@@ -28,8 +28,8 @@ func TestStatus(t *testing.T) {
 
 func TestTagMapMarshal(t *testing.T) {
 	tags := TagMap{
-		"lang": []string{"C++", "Java"},
-		"url":  []string{"here"},
+		"lang": "C++",
+		"url":  "here",
 	}
 
 	b, err := json.Marshal(tags)
@@ -37,12 +37,12 @@ func TestTagMapMarshal(t *testing.T) {
 		t.Errorf(`Marshalling failed: %q`, err)
 	}
 
-	if `{"lang":["C++","Java"],"url":["here"]}` != string(b) {
-		t.Errorf(`{"lang":["C++","Java"],"url":["here"]} serialized as %s`, string(b))
+	if `{"lang":"C++","url":"here"}` != string(b) {
+		t.Errorf(`{"lang":"C++","url":"here"} serialized as %s`, string(b))
 	}
 }
 
-func TestEnvironmentMarshal(t *testing.T) {
+func TestEnvironmentMarshalUnmarshal(t *testing.T) {
 	env := Environment{
 		Context{
 			"this": []string{"that"},
@@ -64,5 +64,14 @@ func TestEnvironmentMarshal(t *testing.T) {
 
 	if !reflect.DeepEqual(env, env2) {
 		t.Errorf(`%v differs from %v`, env, env2)
+	}
+}
+
+func TestApplicationUnmarshal(t *testing.T) {
+	const m string = `{"id":"FOApp","type":"application","components":[{"id":"Database","type":"component","tags":{"group":"core","type":"database"},"provides":[{"id":"raw data","kind":6}]},{"id":"EventBus","type":"component","tags":{"group":"core"},"commands":{"start":{"type":"javascript","steps":["StartComponent"]},"stop":{"type":"javascript","steps":["StopComponent"]}},"provides":[{"id":"raw events","kind":6}]},{"id":"Cache","type":"component","tags":{"group":"core"},"consumes":["raw events","raw data"]},{"id":"PositionService","type":"component","tags":{"group":"TradePosition"},"provides":[{"id":"/api/Position","object":"Position","kind":2,"protocol":"REST"}],"consumes":["raw events","raw data"]},{"id":"Spreadsheet","type":"component","tags":{"group":"TradePosition"},"consumes":["/api/Position"]}]}`
+	var a Application
+	err := json.Unmarshal([]byte(m), &a)
+	if err != nil {
+		t.Errorf(`Deserialisation of %v failed`, m)
 	}
 }

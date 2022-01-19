@@ -2,6 +2,7 @@ package model
 
 import (
 	"encoding/json"
+	"reflect" // Needed for comparison of slices
 	"testing"
 )
 
@@ -38,5 +39,30 @@ func TestTagMapMarshal(t *testing.T) {
 
 	if `{"lang":["C++","Java"],"url":["here"]}` != string(b) {
 		t.Errorf(`{"lang":["C++","Java"],"url":["here"]} serialized as %s`, string(b))
+	}
+}
+
+func TestEnvironmentMarshal(t *testing.T) {
+	env := Environment{
+		Context{
+			"this": []string{"that"},
+		},
+		"This environment",
+	}
+
+	b, err := json.Marshal(&env)
+	if err != nil {
+		t.Errorf(`Marshalling failed: %q`, err)
+	}
+
+	if `{"id":["This environment"],"this":["that"]}` != string(b) {
+		t.Errorf(`{"id":["This environment"],"this":["that"]} serialized as %s`, string(b))
+	}
+
+	var env2 Environment
+	err = json.Unmarshal(b, &env2)
+
+	if !reflect.DeepEqual(env, env2) {
+		t.Errorf(`%v differs from %v`, env, env2)
 	}
 }

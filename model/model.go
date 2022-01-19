@@ -1,6 +1,8 @@
 package model
 
 import (
+	"encoding/json"
+	"errors"
 	"time"
 )
 
@@ -81,4 +83,33 @@ type Application struct {
 	Consumes     []PortId      `json:"consumes,omitempty"`
 	Components   []Component   `json:"components"`
 	Environments []Environment `json:"environments,omitempty"`
+}
+
+// Because we want this model to follow TypeScript we need to
+// refine marshaling / unmarshalling
+func (e *Environment) MarshalJSON() ([]byte, error) {
+	// We need to encode the Context, then add Id
+	copy := make(Context)
+	for key, value := range e.Context {
+		copy[key] = value
+	}
+	copy["id"] = []string{e.Id}
+	return json.Marshal(copy)
+}
+
+func (e *Environment) UnmarshalJSON(data []byte) error {
+	err := json.Unmarshal(data, &e.Context)
+
+	if err != nil {
+		return err
+	}
+
+	if ids, ok := e.Context["id"]; !ok || len(ids) != 1 {
+		return errors.New(`Missing or incorrect "id" field`)
+
+	} else {
+		e.Id = ids[0]
+		delete(e.Context, "id")
+		return nil
+	}
 }

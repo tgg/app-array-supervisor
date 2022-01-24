@@ -44,7 +44,7 @@ func main() {
 	defer client.Close()
 
 	http.HandleFunc("/shell", func(w http.ResponseWriter, r *http.Request) {
-		conn, err := upgrader.Upgrade(w, r, nil) // error ignored for sake of simplicity
+		conn, err := upgrader.Upgrade(w, r, nil)
 
 		if err != nil {
 			log.Fatalln(err)
@@ -79,10 +79,6 @@ func main() {
 				log.Fatal("Failed to run: " + err.Error())
 			}
 		}
-	})
-
-	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		http.ServeFile(w, r, "websockets.html")
 	})
 
 	http.ListenAndServe(":8080", nil)

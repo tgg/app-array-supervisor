@@ -1,22 +1,17 @@
-FROM golang
+FROM golang as builder
 
-# Set the Current Working Directory inside the container
-ARG LISTEN_PORT=8080
-WORKDIR /app
-# Copy everything from the current directory to the PWD (Present Working Directory) inside the container
+
+WORKDIR /go/src/github.com/user/app
 COPY . .
+RUN set -x && \
+    go get -d -v . && \
+    CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o app .
 
-COPY go.mod ./
-COPY go.sum ./
-RUN go mod download
 
-
-# Install the package
-
-RUN go build -o ./app-array-supervisor
-
-# This container exposes port 8080 to the outside world
+# Docker run Golang app
+FROM scratch
+ARG LISTEN_PORT=8080
+WORKDIR /root/
+COPY --from=builder /go/src/github.com/user/app .
 EXPOSE $LISTEN_PORT
-
-# Run the executable
-CMD ["./app-array-supervisor"]
+CMD ["./app"]

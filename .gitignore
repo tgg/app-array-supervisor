@@ -1,2 +1,4 @@
 *.exe
 app-array-supervisor
+.env
+load_env_var.sh

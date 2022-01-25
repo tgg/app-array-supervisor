@@ -41,9 +41,10 @@ func main() {
 	if err != nil {
 		log.Fatal("Failed to dial: ", err)
 	}
+	fmt.Println("Connected to ssh %A", client)
 	defer client.Close()
-
 	http.HandleFunc("/shell", func(w http.ResponseWriter, r *http.Request) {
+
 		conn, err := upgrader.Upgrade(w, r, nil)
 
 		if err != nil {
@@ -80,6 +81,5 @@ func main() {
 			}
 		}
 	})
-
 	http.ListenAndServe(":"+os.Getenv("LISTEN_PORT"), nil)
 }

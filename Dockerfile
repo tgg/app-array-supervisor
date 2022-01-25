@@ -1,7 +1,7 @@
 FROM golang
 
 # Set the Current Working Directory inside the container
-ARG LISTEN_PORT
+ARG LISTEN_PORT=8080
 WORKDIR /app
 # Copy everything from the current directory to the PWD (Present Working Directory) inside the container
 COPY . .

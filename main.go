@@ -31,13 +31,13 @@ func (w *wsWriter) Write(msg []byte) (n int, err error) {
 // Simple http server exposing a websocket that will forward to ssh
 func main() {
 	config := &ssh.ClientConfig{
-		User: os.Args[1],
+		User: os.Getenv("REMOTE_SERVER_USERNAME"),
 		Auth: []ssh.AuthMethod{
-			ssh.Password(os.Args[2]),
+			ssh.Password(os.Getenv("REMOTE_SERVER_PASSWORD")),
 		},
 		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
 	}
-	client, err := ssh.Dial("tcp", fmt.Sprintf("%s:%s", "localhost", "22"), config)
+	client, err := ssh.Dial("tcp", fmt.Sprintf("%s:%s", os.Getenv("REMOTE_SERVER"), os.Getenv("REMOTE_SERVER_PORT")), config)
 	if err != nil {
 		log.Fatal("Failed to dial: ", err)
 	}
@@ -81,5 +81,5 @@ func main() {
 		}
 	})
 
-	http.ListenAndServe(":8080", nil)
+	http.ListenAndServe(":"+os.Getenv("LISTEN_PORT"), nil)
 }

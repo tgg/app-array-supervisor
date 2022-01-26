@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"io"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
@@ -30,10 +31,12 @@ func (w *wsWriter) Write(msg []byte) (n int, err error) {
 
 // Simple http server exposing a websocket that will forward to ssh
 func main() {
+	key, err := ioutil.ReadFile(os.Getenv("REMOTE_SERVER_PK"))
+	signer, err := ssh.ParsePrivateKey(key)
 	config := &ssh.ClientConfig{
 		User: os.Getenv("REMOTE_SERVER_USERNAME"),
 		Auth: []ssh.AuthMethod{
-			ssh.Password(os.Getenv("REMOTE_SERVER_PASSWORD")),
+			ssh.PublicKeys(signer),
 		},
 		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
 	}

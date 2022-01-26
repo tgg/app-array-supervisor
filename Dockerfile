@@ -9,8 +9,8 @@ RUN set -x && \
 
 
 # Docker run Golang app
-FROM scratch
-ARG LISTEN_PORT=8080
+FROM alpine
+ARG LISTEN_PORT=1234
 WORKDIR /root/
 COPY --from=builder /go/src/github.com/user/app .
 EXPOSE $LISTEN_PORT

@@ -29,22 +29,42 @@ func (w *wsWriter) Write(msg []byte) (n int, err error) {
 	return n, err
 }
 
+func auth() (a ssh.AuthMethod, err error) {
+	env := os.Getenv("REMOTE_SERVER_PK")
+	if env != "" {
+		key, err := ioutil.ReadFile(env)
+		if err != nil {
+			return nil, err
+		}
+		signer, err := ssh.ParsePrivateKey(key)
+		if err != nil {
+			return nil, err
+		}
+		return ssh.PublicKeys(signer), nil
+
+	} else {
+		return ssh.Password(os.Getenv("REMOTE_SERVER_PASSWORD")), nil
+	}
+}
+
 // Simple http server exposing a websocket that will forward to ssh
 func main() {
-	key, err := ioutil.ReadFile(os.Getenv("REMOTE_SERVER_PK"))
-	signer, err := ssh.ParsePrivateKey(key)
+	auth, err := auth()
+	if err != nil {
+		log.Fatal("Failed to get authentication method: ", err)
+	}
 	config := &ssh.ClientConfig{
 		User: os.Getenv("REMOTE_SERVER_USERNAME"),
 		Auth: []ssh.AuthMethod{
-			ssh.PublicKeys(signer),
+			auth,
 		},
 		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
 	}
-	client, err := ssh.Dial("tcp", fmt.Sprintf("%s:%s", os.Getenv("REMOTE_SERVER"), os.Getenv("REMOTE_SERVER_PORT")), config)
+	client, err := ssh.Dial("tcp", fmt.Sprintf("%s:%s", os.Getenv("REMOTE_SERVER_HOST"), os.Getenv("REMOTE_SERVER_PORT")), config)
 	if err != nil {
 		log.Fatal("Failed to dial: ", err)
 	}
-	fmt.Println("Connected to ssh %A", client)
+	fmt.Printf("Connected to ssh server %v:%v\n", os.Getenv("REMOTE_SERVER_HOST"), os.Getenv("REMOTE_SERVER_PORT"))
 	defer client.Close()
 	http.HandleFunc("/shell", func(w http.ResponseWriter, r *http.Request) {
 
@@ -80,7 +100,7 @@ func main() {
 			}()
 
 			if err := session.Run(string(msg)); err != nil {
-				log.Fatal("Failed to run: " + err.Error())
+				log.Printf("Error running command: %v", err)
 			}
 		}
 	})

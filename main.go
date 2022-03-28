@@ -11,6 +11,7 @@ import (
 	"time"
 
 	kitlog "github.com/go-kit/kit/log"
+	"github.com/gorilla/mux"
 	"github.com/philippseith/signalr"
 	"golang.org/x/crypto/ssh"
 )
@@ -53,25 +54,31 @@ func main() {
 	fmt.Printf("Connected to ssh server %v:%v\n", os.Getenv("REMOTE_SERVER_HOST"), os.Getenv("REMOTE_SERVER_PORT"))
 	defer client.Close()
 
-	hub := AppArrayHub{
+	hub := &AppArrayHub{
 		sshClient: client,
 	}
 
 	server, _ := signalr.NewServer(context.TODO(),
-		signalr.SimpleHubFactory(&hub),
+		signalr.UseHub(hub),
 		signalr.InsecureSkipVerify(true),
-		//signalr.AllowOriginPatterns([]string{"localhost", "http://localhost:3000"}),
 		signalr.KeepAliveInterval(2*time.Second),
-		signalr.Logger(kitlog.NewLogfmtLogger(os.Stderr), true))
+		signalr.Logger(kitlog.NewLogfmtLogger(os.Stderr), false))
 
-	router := http.NewServeMux()
+	router := &MuxRouterSignalR{
+		Router: mux.NewRouter(),
+	}
 
-	server.MapHTTP(signalr.WithHTTPServeMux(router), "/shell")
+	router.HandleFunc("/model/{id}", func(writer http.ResponseWriter, request *http.Request) {
+		vars := mux.Vars(request)
+		fmt.Printf("%s\n", vars["id"])
+		writer.WriteHeader(300)
+	})
+
+	server.MapHTTP(WithMuxRouter(router), "/shell")
 	c := cors.New(cors.Options{
 		AllowedOrigins:   []string{"http://localhost:3000", "http://localhost"},
 		AllowCredentials: true,
 		AllowedHeaders:   []string{"X-Requested-With", "X-Signalr-User-Agent"},
-		Debug:            true,
 	})
 	handler := c.Handler(router)
 	listeningHost := "localhost:" + os.Getenv("LISTEN_PORT")

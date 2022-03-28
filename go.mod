@@ -3,7 +3,7 @@ module github.com/tgg/app-array-supervisor
 go 1.16
 
 require (
-	github.com/gorilla/websocket v1.4.2
+	github.com/gorilla/mux v1.8.0
 	github.com/philippseith/signalr v0.5.2
 	github.com/rs/cors v1.7.0
 	golang.org/x/crypto v0.0.0-20211215153901-e495a2d5b3d3

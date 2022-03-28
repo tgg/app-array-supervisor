@@ -14,6 +14,14 @@ type AppArrayHub struct {
 	sshClient *ssh.Client
 }
 
+func (h *AppArrayHub) OnConnected(string) {
+	fmt.Printf("%s is connected\n", h.ConnectionID())
+}
+
+func (h *AppArrayHub) Coucou(message string) {
+
+}
+
 func (h *AppArrayHub) SendCommand(message string) {
 	fmt.Printf("%s sent: %s\n", h.ConnectionID(), message)
 
@@ -35,6 +43,6 @@ func (h *AppArrayHub) SendCommand(message string) {
 	buf := new(strings.Builder)
 	io.Copy(buf, stdout)
 
-	//h.Clients().All().Send("statusUpdated", h.ConnectionID()+" sent "+message+" for : "+buf.String())
-	h.Clients().All().Send("statusUpdated", h.ConnectionID()+" sent "+message+" for : ")
+	h.Clients().Client(h.ConnectionID()).Send("statusUpdated", buf.String())
+	h.Clients().All().Send("statusUpdated", h.ConnectionID()+" sent "+message)
 }

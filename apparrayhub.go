@@ -25,6 +25,9 @@ func (h *AppArrayHub) Coucou(message string) {
 func (h *AppArrayHub) SendCommand(message string) {
 	fmt.Printf("%s sent: %s\n", h.ConnectionID(), message)
 
+	ctx := getAppArrayContext()
+	fmt.Printf("%s\n", ctx.models[0])
+
 	session, err := h.sshClient.NewSession()
 	if err != nil {
 		log.Fatal("Failed to create session: ", err)

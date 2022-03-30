@@ -34,6 +34,23 @@ func auth() (a ssh.AuthMethod, err error) {
 	}
 }
 
+const (
+	AppArrayContextId = "AppArrayContextId"
+)
+
+type AppArrayContext struct {
+	models []string
+	hub    *AppArrayHub
+}
+
+var (
+	globalCtx = context.WithValue(context.TODO(), AppArrayContextId, &AppArrayContext{})
+)
+
+func getAppArrayContext() *AppArrayContext {
+	return globalCtx.Value(AppArrayContextId).(*AppArrayContext)
+}
+
 // Simple http server exposing a websocket that will forward to ssh
 func main() {
 	auth, err := auth()
@@ -58,6 +75,11 @@ func main() {
 		sshClient: client,
 	}
 
+	appArrayContext := getAppArrayContext()
+	appArrayContext.models = append(appArrayContext.models, "ok")
+	appArrayContext.hub = hub
+	fmt.Println(appArrayContext.models[0])
+
 	server, _ := signalr.NewServer(context.TODO(),
 		signalr.UseHub(hub),
 		signalr.InsecureSkipVerify(true),
@@ -68,11 +90,7 @@ func main() {
 		Router: mux.NewRouter(),
 	}
 
-	router.HandleFunc("/model/{id}", func(writer http.ResponseWriter, request *http.Request) {
-		vars := mux.Vars(request)
-		fmt.Printf("%s\n", vars["id"])
-		writer.WriteHeader(300)
-	})
+	router.AddHandledFunctions()
 
 	server.MapHTTP(WithMuxRouter(router), "/shell")
 	c := cors.New(cors.Options{
@@ -82,7 +100,7 @@ func main() {
 	})
 	handler := c.Handler(router)
 	listeningHost := "localhost:" + os.Getenv("LISTEN_PORT")
-	fmt.Printf("Listening for websocket connections on " + listeningHost)
+	fmt.Printf("Listening for websocket connections on " + listeningHost + "\n")
 	if err := http.ListenAndServe(listeningHost, handler); err != nil {
 		log.Fatal("ListenAndServe:", err)
 	}

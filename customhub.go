@@ -32,11 +32,11 @@ func (h *CustomHub) OnConnected(string) {
 }
 
 func (h *CustomHub) SendResponseCaller(response CustomHubResponse, target string) {
-	b, _ := json.Marshal(response)
+	b, _ := json.Marshal(&response)
 	h.Clients().Caller().Send(target, string(b))
 }
 
 func (h *CustomHub) UpdateClients(response CustomHubResponse, target string) {
-	b, _ := json.Marshal(response)
+	b, _ := json.Marshal(&response)
 	h.Clients().All().Send(target, string(b))
 }

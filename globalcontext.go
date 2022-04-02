@@ -28,7 +28,11 @@ type AppArrayContext struct {
 }
 
 var (
-	globalCtx = context.WithValue(context.TODO(), AppArrayContextId, &AppArrayContext{})
+	globalCtx = context.WithValue(context.TODO(), AppArrayContextId,
+		&AppArrayContext{
+			models: map[string]model.Application{},
+			appHub: map[string]*AppArrayHub{},
+		})
 )
 
 func getAppArrayContext() ConcurrentContext {

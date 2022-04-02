@@ -1,7 +1,5 @@
 package main
 
-import "encoding/json"
-
 const (
 	StatusOk    = 200
 	StatusError = 500
@@ -13,16 +11,16 @@ const (
 )
 
 type CustomHubResponse struct {
-	msg        string
-	jsonType   string
-	statusCode int
+	Msg        any    `json:"msg"`
+	JsonType   string `json:"type"`
+	StatusCode int    `json:"statusCode"`
 }
 
-func NewCustomHubResponse(message string, jsonType string, statusCode int) *CustomHubResponse {
+func NewCustomHubResponse(message any, jsonType string, statusCode int) *CustomHubResponse {
 	return &CustomHubResponse{
-		statusCode: statusCode,
-		jsonType:   jsonType,
-		msg:        message,
+		StatusCode: statusCode,
+		JsonType:   jsonType,
+		Msg:        message,
 	}
 }
 
@@ -31,12 +29,11 @@ func NewErrorResponse(message string) CustomHubResponse {
 }
 
 type NewModelResponse struct {
-	id   string
-	path []string
+	Id   string `json:"id"`
+	Path string `json:"path"`
 }
 
 func NewNewModelResponse(id string, path string) CustomHubResponse {
-	inner := NewModelResponse{}
-	b, _ := json.Marshal(inner)
-	return *NewCustomHubResponse(string(b), TypeNewModel, StatusOk)
+	inner := NewModelResponse{id, path}
+	return *NewCustomHubResponse(inner, TypeNewModel, StatusOk)
 }

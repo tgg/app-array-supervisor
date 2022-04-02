@@ -23,7 +23,7 @@ func (h *AppArrayHub) SendCommand(message string) {
 	log.Printf("%s sent: %s\n", h.ConnectionID(), message)
 
 	ctx := getAppArrayContext()
-	log.Printf("%s\n", len(ctx.Models()))
+	log.Printf("%d\n", len(ctx.Models()))
 
 	session, err := h.sshClient.NewSession()
 	if err != nil {

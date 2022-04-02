@@ -1,19 +1,14 @@
 package main
 
 import (
-	"context"
 	"fmt"
+	"github.com/gorilla/mux"
 	"github.com/rs/cors"
+	"golang.org/x/crypto/ssh"
 	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
-	"time"
-
-	kitlog "github.com/go-kit/kit/log"
-	"github.com/gorilla/mux"
-	"github.com/philippseith/signalr"
-	"golang.org/x/crypto/ssh"
 )
 
 func auth() (a ssh.AuthMethod, err error) {
@@ -34,23 +29,6 @@ func auth() (a ssh.AuthMethod, err error) {
 	}
 }
 
-const (
-	AppArrayContextId = "AppArrayContextId"
-)
-
-type AppArrayContext struct {
-	models []string
-	hub    *AppArrayHub
-}
-
-var (
-	globalCtx = context.WithValue(context.TODO(), AppArrayContextId, &AppArrayContext{})
-)
-
-func getAppArrayContext() *AppArrayContext {
-	return globalCtx.Value(AppArrayContextId).(*AppArrayContext)
-}
-
 // Simple http server exposing a websocket that will forward to ssh
 func main() {
 	auth, err := auth()
@@ -68,39 +46,30 @@ func main() {
 	if err != nil {
 		log.Fatal("Failed to dial: ", err)
 	}
-	fmt.Printf("Connected to ssh server %v:%v\n", os.Getenv("REMOTE_SERVER_HOST"), os.Getenv("REMOTE_SERVER_PORT"))
+	log.Printf("Connected to ssh server %v:%v\n", os.Getenv("REMOTE_SERVER_HOST"), os.Getenv("REMOTE_SERVER_PORT"))
 	defer client.Close()
-
-	hub := &AppArrayHub{
-		sshClient: client,
-	}
-
-	appArrayContext := getAppArrayContext()
-	appArrayContext.models = append(appArrayContext.models, "ok")
-	appArrayContext.hub = hub
-	fmt.Println(appArrayContext.models[0])
-
-	server, _ := signalr.NewServer(context.TODO(),
-		signalr.UseHub(hub),
-		signalr.InsecureSkipVerify(true),
-		signalr.KeepAliveInterval(2*time.Second),
-		signalr.Logger(kitlog.NewLogfmtLogger(os.Stderr), false))
 
 	router := &MuxRouterSignalR{
 		Router: mux.NewRouter(),
 	}
-
 	router.AddHandledFunctions()
+	router.RegisterSignalRRoute("/shell", NewAppArrayHub(client))
+	router.RegisterSignalRRoute("/model", NewModelHub(client))
+	log.Println("SignalR server created")
 
-	server.MapHTTP(WithMuxRouter(router), "/shell")
 	c := cors.New(cors.Options{
 		AllowedOrigins:   []string{"http://localhost:3000", "http://localhost"},
 		AllowCredentials: true,
 		AllowedHeaders:   []string{"X-Requested-With", "X-Signalr-User-Agent"},
 	})
 	handler := c.Handler(router)
+	log.Println("Routes registered")
+
+	getAppArrayContext().SetRouter(router)
+	log.Println("Context configured")
+
 	listeningHost := "localhost:" + os.Getenv("LISTEN_PORT")
-	fmt.Printf("Listening for websocket connections on " + listeningHost + "\n")
+	log.Printf("Listening for websocket connections on %s\n", listeningHost)
 	if err := http.ListenAndServe(listeningHost, handler); err != nil {
 		log.Fatal("ListenAndServe:", err)
 	}

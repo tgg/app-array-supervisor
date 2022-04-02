@@ -1,8 +1,6 @@
 package main
 
 import (
-	"fmt"
-	"github.com/philippseith/signalr"
 	"golang.org/x/crypto/ssh"
 	"io"
 	"log"
@@ -10,23 +8,22 @@ import (
 )
 
 type AppArrayHub struct {
-	signalr.Hub
+	CustomHub
 	sshClient *ssh.Client
 }
 
-func (h *AppArrayHub) OnConnected(string) {
-	fmt.Printf("%s is connected\n", h.ConnectionID())
-}
-
-func (h *AppArrayHub) Coucou(message string) {
-
+func NewAppArrayHub(sshClient *ssh.Client) *AppArrayHub {
+	hub := &AppArrayHub{
+		sshClient: sshClient,
+	}
+	return hub
 }
 
 func (h *AppArrayHub) SendCommand(message string) {
-	fmt.Printf("%s sent: %s\n", h.ConnectionID(), message)
+	log.Printf("%s sent: %s\n", h.ConnectionID(), message)
 
 	ctx := getAppArrayContext()
-	fmt.Printf("%s\n", ctx.models[0])
+	log.Printf("%s\n", len(ctx.Models()))
 
 	session, err := h.sshClient.NewSession()
 	if err != nil {
@@ -46,6 +43,6 @@ func (h *AppArrayHub) SendCommand(message string) {
 	buf := new(strings.Builder)
 	io.Copy(buf, stdout)
 
-	h.Clients().Client(h.ConnectionID()).Send("statusUpdated", buf.String())
+	h.Clients().Caller().Send("statusUpdated", buf.String())
 	h.Clients().All().Send("statusUpdated", h.ConnectionID()+" sent "+message)
 }

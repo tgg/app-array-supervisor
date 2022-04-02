@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"golang.org/x/crypto/ssh"
 	"io"
 	"log"
@@ -43,6 +44,6 @@ func (h *AppArrayHub) SendCommand(message string) {
 	buf := new(strings.Builder)
 	io.Copy(buf, stdout)
 
-	h.Clients().Caller().Send("statusUpdated", buf.String())
-	h.Clients().All().Send("statusUpdated", h.ConnectionID()+" sent "+message)
+	h.SendResponseCaller(NewMessageResponse(buf.String()), "statusUpdated")
+	h.UpdateClients(NewMessageResponse(fmt.Sprintf("%s sent %s", h.ConnectionID(), message)), "statusUpdated")
 }

@@ -15,15 +15,18 @@ import (
 
 type MuxRouterSignalR struct {
 	*mux.Router
+	paths []string
 }
 
 func (router *MuxRouterSignalR) HandleFunc(path string, f func(w http.ResponseWriter, r *http.Request)) {
 	router.NewRoute().Path(path).HandlerFunc(f)
+	router.paths = append(router.paths, path)
 	log.Printf("Route %s registered\n", path)
 }
 
 func (router *MuxRouterSignalR) Handle(path string, handler http.Handler) {
 	router.NewRoute().Path(path).Handler(handler)
+	router.paths = append(router.paths, path)
 	log.Printf("Route %s registered\n", path)
 }
 
@@ -46,16 +49,34 @@ func (router *MuxRouterSignalR) AddHandledFunctions() {
 			writer.Write(b)
 		}
 	})
+	router.HandleFunc("/flush", func(w http.ResponseWriter, r *http.Request) {
+		ctx := getAppArrayContext()
+		i := 0
+		for k := range ctx.Models() {
+			delete(ctx.Models(), k)
+			i++
+		}
+		l := 0
+		for k := range ctx.AppHubs() {
+			delete(ctx.AppHubs(), k)
+			l++
+		}
+		w.Write([]byte(fmt.Sprintf("%d and %d deleted", i, l)))
+	})
 }
 
 func (router *MuxRouterSignalR) RegisterSignalRRoute(path string, hub CustomHubInterface) {
-	hub.SetPath(path)
-	logger := kitlog.NewJSONLogger(kitlog.NewSyncWriter(os.Stdout))
-	server, _ := signalr.NewServer(context.TODO(),
-		signalr.UseHub(hub),
-		signalr.InsecureSkipVerify(true),
-		signalr.KeepAliveInterval(2*time.Second),
-		signalr.Logger(logger, false))
-	server.MapHTTP(WithMuxRouter(router), path)
-	log.Printf("SignalR route %s registered\n", path)
+	if !stringInSlice(path, router.paths) {
+		hub.SetPath(path)
+		logger := kitlog.NewJSONLogger(kitlog.NewSyncWriter(os.Stdout))
+		server, _ := signalr.NewServer(context.TODO(),
+			signalr.UseHub(hub),
+			signalr.InsecureSkipVerify(true),
+			signalr.KeepAliveInterval(2*time.Second),
+			signalr.Logger(logger, false))
+		server.MapHTTP(WithMuxRouter(router), path)
+		log.Printf("SignalR route %s registered\n", path)
+	} else {
+		log.Printf("SignalR route %s not registered, it already exists\n", path)
+	}
 }

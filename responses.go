@@ -8,6 +8,7 @@ const (
 const (
 	TypeError    = "Error"
 	TypeNewModel = "NewModel"
+	TypeMessage  = "Message"
 )
 
 type CustomHubResponse struct {
@@ -26,6 +27,10 @@ func NewCustomHubResponse(message any, jsonType string, statusCode int) *CustomH
 
 func NewErrorResponse(message string) CustomHubResponse {
 	return *NewCustomHubResponse(message, TypeError, StatusError)
+}
+
+func NewMessageResponse(message string) CustomHubResponse {
+	return *NewCustomHubResponse(message, TypeMessage, StatusOk)
 }
 
 type NewModelResponse struct {

@@ -28,6 +28,7 @@ func (h *CustomHub) GetPath() string {
 }
 
 func (h *CustomHub) OnConnected(string) {
+	h.Groups().AddToGroup(h.path, h.ConnectionID())
 	log.Printf("%s is connected with ID %s on : %s\n", h.RemoteAddr(), h.ConnectionID(), h.path)
 }
 
@@ -38,5 +39,5 @@ func (h *CustomHub) SendResponseCaller(response CustomHubResponse, target string
 
 func (h *CustomHub) UpdateClients(response CustomHubResponse, target string) {
 	b, _ := json.Marshal(&response)
-	h.Clients().All().Send(target, string(b))
+	h.Clients().Group(h.path).Send(target, string(b))
 }

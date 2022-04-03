@@ -115,8 +115,9 @@ func (e *Environment) UnmarshalJSON(data []byte) error {
 		delete(contextExport, "id")
 		for key, value := range contextExport {
 			valueMap := value.(map[string]any)
+			e.Context[key] = map[string]string{}
 			for k, v := range valueMap {
-				e.Context[key] = map[string]string{k: v.(string)}
+				e.Context[key][k] = v.(string)
 			}
 		}
 		return nil

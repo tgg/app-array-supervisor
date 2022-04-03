@@ -45,7 +45,7 @@ func TestTagMapMarshal(t *testing.T) {
 func TestEnvironmentMarshalUnmarshal(t *testing.T) {
 	env := Environment{
 		Context{
-			"Copier": map[string]string{"source": "file:///tmp/app/in"},
+			"Copier": map[string]string{"source": "file:///tmp/app/in", "host": "localhost"},
 			"Zipper": map[string]string{"output": "file:///tmp/my.tgz"},
 		},
 		"This environment",
@@ -56,7 +56,7 @@ func TestEnvironmentMarshalUnmarshal(t *testing.T) {
 		t.Errorf(`Marshalling failed: %q`, err)
 	}
 
-	res := `{"Copier":{"source":"file:///tmp/app/in"},"Zipper":{"output":"file:///tmp/my.tgz"},"id":"This environment"}`
+	res := `{"Copier":{"host":"localhost","source":"file:///tmp/app/in"},"Zipper":{"output":"file:///tmp/my.tgz"},"id":"This environment"}`
 	if res != string(b) {
 		t.Errorf(`%s serialized as %s`, res, string(b))
 	}

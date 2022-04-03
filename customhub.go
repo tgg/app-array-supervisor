@@ -40,6 +40,10 @@ func (h *CustomHub) OnConnected(string) {
 	log.Printf("%s is connected on : %s\n", h.ConnectionID(), h.path)
 }
 
+func (h *CustomHub) OnDisconnected(string) {
+	h.Groups().RemoveFromGroup(h.path, h.ConnectionID())
+}
+
 func (h *CustomHub) SendResponseCaller(response CustomHubResponse, target string) {
 	log.Printf("Route %s : Sending response %d with message \"%s\" to %s\n", h.path, response.StatusCode, response.Msg, h.ConnectionID())
 	b, _ := json.Marshal(&response)

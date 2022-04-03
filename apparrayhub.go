@@ -39,8 +39,9 @@ func ReceiveSendCommandRequest(message string) SendCommandRequest {
 	return req
 }
 
-func (h *AppArrayHub) RunCommand(cmd string, client *ssh.Client) string {
+func (h *AppArrayHub) RunCommand(cmd string, client *ssh.Client) (int, string) {
 	session, err := client.NewSession()
+	res := 0
 	if err != nil {
 		log.Fatal("Failed to create session: ", err)
 	}
@@ -51,13 +52,16 @@ func (h *AppArrayHub) RunCommand(cmd string, client *ssh.Client) string {
 		log.Fatalf("Unable to setup stdout for session: %v\n", err)
 	}
 
-	if err := session.Run(cmd); err != nil {
-		log.Printf("Error running command: %v", err)
+	if errCmd := session.Run(cmd); errCmd != nil {
+		log.Printf("Error running command: %v", errCmd)
+		if sshErr, isExitError := errCmd.(*ssh.ExitError); isExitError {
+			res = sshErr.ExitStatus()
+		}
 	}
 
 	buf := new(strings.Builder)
 	io.Copy(buf, stdout)
-	return buf.String()
+	return res, buf.String()
 }
 
 func (h *AppArrayHub) SendCommand(message string) {
@@ -65,8 +69,8 @@ func (h *AppArrayHub) SendCommand(message string) {
 	req := ReceiveSendCommandRequest(message)
 	if req.Command != "" {
 		if client, found := h.sshClients[req.Component]; found {
-			h.SendResponseCaller(NewMessageResponse(h.RunCommand(req.Command, client)), "statusUpdated")
-			h.UpdateClients(NewMessageResponse(fmt.Sprintf("%s sent %s", h.ConnectionID(), message)), "statusUpdated")
+			_, res := h.RunCommand(req.Command, client)
+			h.SendResponseCaller(NewMessageResponse(res), "getCommandResult")
 		} else {
 			h.SendResponseCaller(NewErrorResponse(fmt.Sprintf("No connection found for component %s", req.Component)), "statusUpdated")
 		}

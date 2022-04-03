@@ -32,8 +32,8 @@ func (s *StatusComponentRoutine) Run() {
 	log.Printf("Status routine for route %s, component %s is running\n", s.hub.path, s.c.Id)
 	for {
 		time.Sleep(5 * time.Second)
-		res := s.hub.RunCommand(s.cmd.Steps[0], s.sshClient)
-		s.hub.UpdateClientsWithID(NewMessageResponse(res), "statusUpdated", "routine")
+		status, _ := s.hub.RunCommand(s.cmd.Steps[0], s.sshClient)
+		s.hub.UpdateClientsWithID(NewUpdateResponse(s.c.Id, status), "statusUpdated", "routine")
 	}
 	return
 }

@@ -6,10 +6,11 @@ const (
 )
 
 const (
-	TypeError    = "Error"
-	TypeNewModel = "NewModel"
-	TypeMessage  = "Message"
-	TypeUpdate   = "Update"
+	TypeError           = "Error"
+	TypeNewModel        = "NewModel"
+	TypeMessage         = "Message"
+	TypeUpdate          = "Update"
+	TypeCommandResponse = "CommandResponse"
 )
 
 const (
@@ -81,5 +82,5 @@ func NewCommandResponse(status int, result string, request SendCommandRequest) C
 		SendCommandRequest: request,
 		Result:             result,
 	}
-	return *NewCustomHubResponse(inner, TypeUpdate, StatusOk)
+	return *NewCustomHubResponse(inner, TypeCommandResponse, StatusOk)
 }

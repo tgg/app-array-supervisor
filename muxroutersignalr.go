@@ -45,7 +45,7 @@ func (router *MuxRouterSignalR) AddHandledFunctions() {
 			writer.WriteHeader(504)
 		} else {
 			if hub, ok := ctx.AppHubs()[id]; ok {
-				hub.Clients().Group(hub.GetPath()).Send("statusUpdated", fmt.Sprintf("The address %s just requested the model %s", request.RemoteAddr, app.Id))
+				hub.UpdateClientsWithID(NewMessageResponse(fmt.Sprintf("The address %s just requested the model %s", request.RemoteAddr, app.Id)), "statusUpdated", "router")
 			}
 			writer.WriteHeader(200)
 			b, _ := json.Marshal(app)

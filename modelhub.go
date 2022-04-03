@@ -4,19 +4,15 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/tgg/app-array-supervisor/model"
-	"golang.org/x/crypto/ssh"
 	"log"
 )
 
 type ModelHub struct {
 	CustomHub
-	sshClient *ssh.Client
 }
 
-func NewModelHub(sshClient *ssh.Client) *ModelHub {
-	hub := &ModelHub{
-		sshClient: sshClient,
-	}
+func NewModelHub() *ModelHub {
+	hub := &ModelHub{}
 	getAppArrayContext().SetModelHub(hub)
 	return hub
 }
@@ -31,7 +27,7 @@ func (h *ModelHub) SendModel(message string) {
 		resp = NewErrorResponse(fmt.Sprintf("Incorrect model %s", err))
 		h.SendResponseCaller(resp, "sendModelResponse")
 	} else {
-		ok, msg := SaveModel(a, h.sshClient)
+		ok, msg := saveModel(a)
 		if ok {
 			resp = NewNewModelResponse(a.Id, getAppArrayContext().AppHubs()[a.Id].GetPath())
 			h.SendResponseCaller(resp, "sendModelResponse")
@@ -42,11 +38,11 @@ func (h *ModelHub) SendModel(message string) {
 	}
 }
 
-func SaveModel(app model.Application, client *ssh.Client) (bool, string) {
+func saveModel(app model.Application) (bool, string) {
 	c := getAppArrayContext()
 	if foundApp, ok := c.Models()[app.Id]; !ok {
 		c.Models()[app.Id] = app
-		hub := NewAppArrayHub(client)
+		hub := NewAppArrayHub(app)
 		if foundHub, ok2 := c.AppHubs()[app.Id]; !ok2 {
 			c.AppHubs()[app.Id] = hub
 			c.Router().RegisterSignalRRoute(fmt.Sprintf("/%s", app.Id), hub)

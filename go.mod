@@ -4,9 +4,9 @@ go 1.18
 
 require (
 	github.com/gorilla/mux v1.8.0
-	github.com/philippseith/signalr v1.0.0
-	//github.com/philippseith/signalr v0.5.2
+	github.com/philippseith/signalr v0.5.2
 	github.com/rs/cors v1.7.0
+	github.com/tebeka/atexit v0.3.0
 	golang.org/x/crypto v0.0.0-20211215153901-e495a2d5b3d3
 )
 
@@ -30,5 +30,3 @@ require (
 	gopkg.in/yaml.v3 v3.0.0-20200313102051-9f266ea9e77c // indirect
 	nhooyr.io/websocket v1.8.7 // indirect
 )
-
-replace github.com/philippseith/signalr v1.0.0 => ../../Workspace/GO/signalr

@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"github.com/tgg/app-array-supervisor/model"
+	"golang.org/x/crypto/ssh"
 	"sync"
 )
 
@@ -17,21 +18,24 @@ type ConcurrentContext interface {
 	Router() *MuxRouterSignalR
 	SetModelHub(*ModelHub)
 	SetRouter(*MuxRouterSignalR)
+	GetClientHosts() map[string]*ssh.Client
 }
 
 type AppArrayContext struct {
-	cm       sync.RWMutex
-	models   map[string]model.Application
-	appHub   map[string]*AppArrayHub
-	modelHub *ModelHub
-	router   *MuxRouterSignalR
+	cm         sync.RWMutex
+	models     map[string]model.Application
+	appHub     map[string]*AppArrayHub
+	modelHub   *ModelHub
+	router     *MuxRouterSignalR
+	clientHost map[string]*ssh.Client
 }
 
 var (
 	globalCtx = context.WithValue(context.TODO(), AppArrayContextId,
 		&AppArrayContext{
-			models: map[string]model.Application{},
-			appHub: map[string]*AppArrayHub{},
+			models:     map[string]model.Application{},
+			appHub:     map[string]*AppArrayHub{},
+			clientHost: map[string]*ssh.Client{},
 		})
 )
 
@@ -61,6 +65,12 @@ func (a *AppArrayContext) Router() *MuxRouterSignalR {
 	a.cm.RLock()
 	defer a.cm.RUnlock()
 	return a.router
+}
+
+func (a *AppArrayContext) GetClientHosts() map[string]*ssh.Client {
+	a.cm.RLock()
+	defer a.cm.RUnlock()
+	return a.clientHost
 }
 
 func (a *AppArrayContext) SetRouter(router *MuxRouterSignalR) {

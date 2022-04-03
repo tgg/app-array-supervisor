@@ -40,10 +40,13 @@ func (router *MuxRouterSignalR) AddHandledFunctions() {
 	router.HandleFunc("/models/{id}", func(writer http.ResponseWriter, request *http.Request) {
 		vars := mux.Vars(request)
 		ctx := getAppArrayContext()
-		if app, ok := ctx.Models()[vars["id"]]; !ok {
+		id := vars["id"]
+		if app, ok := ctx.Models()[id]; !ok {
 			writer.WriteHeader(504)
 		} else {
-			ctx.ModelHub().Clients().All().Send("statusUpdated", fmt.Sprintf("The adress %s just requested the model %s", request.RemoteAddr, app.Id))
+			if hub, ok := ctx.AppHubs()[id]; ok {
+				hub.Clients().Group(hub.GetPath()).Send("statusUpdated", fmt.Sprintf("The address %s just requested the model %s", request.RemoteAddr, app.Id))
+			}
 			writer.WriteHeader(200)
 			b, _ := json.Marshal(app)
 			writer.Write(b)
@@ -76,6 +79,7 @@ func (router *MuxRouterSignalR) RegisterSignalRRoute(path string, hub CustomHubI
 			signalr.Logger(logger, false))
 		server.MapHTTP(WithMuxRouter(router), path)
 		log.Printf("SignalR route %s registered\n", path)
+		hub.RunRoutines()
 	} else {
 		log.Printf("SignalR route %s not registered, it already exists\n", path)
 	}

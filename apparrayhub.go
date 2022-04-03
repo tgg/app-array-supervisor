@@ -26,6 +26,7 @@ func NewAppArrayHub(app model.Application) *AppArrayHub {
 }
 
 type SendCommandRequest struct {
+	CommandId string `json:"commandId"`
 	Command   string `json:"command"`
 	Component string `json:"id"`
 }
@@ -69,8 +70,8 @@ func (h *AppArrayHub) SendCommand(message string) {
 	req := ReceiveSendCommandRequest(message)
 	if req.Command != "" {
 		if client, found := h.sshClients[req.Component]; found {
-			_, res := h.RunCommand(req.Command, client)
-			h.SendResponseCaller(NewMessageResponse(res), "getCommandResult")
+			status, res := h.RunCommand(req.Command, client)
+			h.SendResponseCaller(NewCommandResponse(status, res, req), "getCommandResult")
 		} else {
 			h.SendResponseCaller(NewErrorResponse(fmt.Sprintf("No connection found for component %s", req.Component)), "statusUpdated")
 		}

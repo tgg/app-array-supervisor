@@ -9,7 +9,17 @@ import (
 	"os"
 )
 
-func Auth() (a ssh.AuthMethod, err error) {
+func GetVarFromHost(host string, name string) string {
+	prefix := ""
+	if host == "localhost" {
+		prefix = "LOCALHOST"
+	} else {
+		prefix = "OTHER"
+	}
+	return os.Getenv(fmt.Sprintf("%s_%s", prefix, name))
+}
+
+func Auth(host string) (a ssh.AuthMethod, err error) {
 	env := os.Getenv("REMOTE_SERVER_PK")
 	if env != "" {
 		key, err := ioutil.ReadFile(env)
@@ -23,17 +33,17 @@ func Auth() (a ssh.AuthMethod, err error) {
 		return ssh.PublicKeys(signer), nil
 
 	} else {
-		return ssh.Password(os.Getenv("REMOTE_SERVER_PASSWORD")), nil
+		return ssh.Password(GetVarFromHost(host, "PASSWORD")), nil
 	}
 }
 
 func CreateSshClient(host string) *ssh.Client {
-	auth, err := Auth()
+	auth, err := Auth(host)
 	if err != nil {
 		log.Fatal("Failed to get authentication method: ", err)
 	}
 	config := &ssh.ClientConfig{
-		User: os.Getenv("REMOTE_SERVER_USERNAME"),
+		User: GetVarFromHost(host, "USERNAME"),
 		Auth: []ssh.AuthMethod{
 			auth,
 		},

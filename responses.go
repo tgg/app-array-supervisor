@@ -25,8 +25,8 @@ type CustomHubResponse struct {
 }
 
 type NewModelResponse struct {
-	Id   string `json:"id"`
-	Path string `json:"path"`
+	Id    string   `json:"id"`
+	Paths []string `json:"path"`
 }
 
 type UpdateResponse struct {
@@ -56,8 +56,8 @@ func NewMessageResponse(message string) CustomHubResponse {
 	return *NewCustomHubResponse(message, TypeMessage, StatusOk)
 }
 
-func NewNewModelResponse(id string, path string) CustomHubResponse {
-	inner := NewModelResponse{id, path}
+func NewNewModelResponse(id string, paths []string) CustomHubResponse {
+	inner := NewModelResponse{id, paths}
 	return *NewCustomHubResponse(inner, TypeNewModel, StatusOk)
 }
 

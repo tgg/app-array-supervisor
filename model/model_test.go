@@ -2,6 +2,7 @@ package model
 
 import (
 	"encoding/json"
+	"github.com/stretchr/testify/assert"
 	"reflect" // Needed for comparison of slices
 	"testing"
 )
@@ -85,4 +86,11 @@ func TestNewApplicationUnmarshal(t *testing.T) {
 	if err != nil {
 		t.Errorf(`Deserialisation of %v failed`, m)
 	}
+}
+
+func TestFormattedIdEnvironment(t *testing.T) {
+	env := Environment{
+		Id: "This environment",
+	}
+	assert.EqualValues(t, "This_environment", env.FormattedId())
 }

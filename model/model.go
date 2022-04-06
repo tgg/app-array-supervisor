@@ -3,6 +3,7 @@ package model
 import (
 	"encoding/json"
 	"errors"
+	"strings"
 	"time"
 )
 
@@ -84,6 +85,18 @@ type Application struct {
 	Consumes     []PortId      `json:"consumes,omitempty"`
 	Components   []Component   `json:"components"`
 	Environments []Environment `json:"environments"`
+}
+
+func formattedId(id string) string {
+	return strings.Replace(id, " ", "_", -1)
+}
+
+func (l *LiveElement) FormattedId() string {
+	return formattedId(l.Id)
+}
+
+func (e *Environment) FormattedId() string {
+	return formattedId(e.Id)
 }
 
 // Because we want this model to follow TypeScript we need to

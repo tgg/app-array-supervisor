@@ -8,21 +8,47 @@ import (
 	"io"
 	"log"
 	"strings"
+	"sync"
 )
 
 type AppArrayHub struct {
 	CustomHub
 	sshClients map[string]*ssh.Client
+	routines   []StatusRoutineInterface
+	started    bool
+	cm         sync.RWMutex
+	app        model.Application
+	env        model.Environment
 }
 
-func NewAppArrayHub(app model.Application) *AppArrayHub {
+func NewAppArrayHub(app model.Application, env model.Environment) *AppArrayHub {
 	hub := &AppArrayHub{
-		sshClients: CreateSshClientsForApplication(app),
+		sshClients: map[string]*ssh.Client{},
+		app:        app,
+		env:        env,
 	}
 	if len(app.Environments) != 0 {
-		hub.routines = append(hub.routines, NewStatusRoutine(app, app.Environments[0], hub))
+		hub.routines = append(hub.routines, NewStatusRoutine(app, env, hub))
 	}
 	return hub
+}
+
+func (h *AppArrayHub) OnFirstConnected() {
+	h.cm.Lock()
+	defer h.cm.Unlock()
+	if !h.started {
+		h.sshClients = CreateSshClientsForApplication(h.env)
+		for _, routine := range h.routines {
+			routine.Run()
+		}
+		h.started = true
+	}
+}
+
+func (h *AppArrayHub) OnConnected(string) {
+	h.OnFirstConnected()
+	h.Groups().AddToGroup(h.path, h.ConnectionID())
+	log.Printf("%s is connected on : %s\n", h.ConnectionID(), h.path)
 }
 
 type SendCommandRequest struct {

@@ -55,9 +55,9 @@ func saveModel(app model.Application) (bool, string, []string) {
 
 func createHubs(app model.Application) []string {
 	c := getAppArrayContext()
-	res := []string{}
+	var res []string
 	for _, env := range app.Environments {
-		hub := NewAppArrayHub(app)
+		hub := NewAppArrayHub(app, env)
 		c.AppHubs()[env.FormattedId()] = hub
 		c.Router().RegisterSignalRRoute(fmt.Sprintf("/%s/%s", app.FormattedId(), env.FormattedId()), hub)
 		res = append(res, hub.GetPath())

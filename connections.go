@@ -59,22 +59,19 @@ func CreateSshClient(host string) *ssh.Client {
 }
 
 //Returns map for component / ssh.client
-func CreateSshClientsForApplication(app model.Application) map[string]*ssh.Client {
+func CreateSshClientsForApplication(env model.Environment) map[string]*ssh.Client {
 	res := map[string]*ssh.Client{}
-	if len(app.Environments) != 0 {
-		env := app.Environments[0]
-		for componentId, v := range env.Context {
-			if host, found := v["host"]; found {
-				clientHosts := getAppArrayContext().GetClientHosts()
-				var sshClient *ssh.Client
-				if foundClient, found2 := clientHosts[host]; !found2 {
-					sshClient = CreateSshClient(host)
-					clientHosts[host] = sshClient
-				} else {
-					sshClient = foundClient
-				}
-				res[componentId] = sshClient
+	for componentId, v := range env.Context {
+		if host, found := v["host"]; found {
+			clientHosts := getAppArrayContext().GetClientHosts()
+			var sshClient *ssh.Client
+			if foundClient, found2 := clientHosts[host]; !found2 {
+				sshClient = CreateSshClient(host)
+				clientHosts[host] = sshClient
+			} else {
+				sshClient = foundClient
 			}
+			res[componentId] = sshClient
 		}
 	}
 	return res

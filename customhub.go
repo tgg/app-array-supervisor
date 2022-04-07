@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"github.com/philippseith/signalr"
 	"log"
-	"sync"
 )
 
 type CustomHubInterface interface {
@@ -13,26 +12,11 @@ type CustomHubInterface interface {
 	OnDisconnected(connectionID string)
 	SetPath(path string)
 	GetPath() string
-	RunRoutines()
 }
 
 type CustomHub struct {
 	signalr.Hub
-	path     string
-	routines []StatusRoutineInterface
-	started  bool
-	cm       sync.RWMutex
-}
-
-func (h *CustomHub) RunRoutines() {
-	h.cm.Lock()
-	defer h.cm.Unlock()
-	if !h.started {
-		for _, routine := range h.routines {
-			routine.Run()
-		}
-		h.started = false
-	}
+	path string
 }
 
 func (h *CustomHub) SetPath(path string) {
@@ -44,7 +28,6 @@ func (h *CustomHub) GetPath() string {
 }
 
 func (h *CustomHub) OnConnected(string) {
-	h.RunRoutines()
 	h.Groups().AddToGroup(h.path, h.ConnectionID())
 	log.Printf("%s is connected on : %s\n", h.ConnectionID(), h.path)
 }

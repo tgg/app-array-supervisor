@@ -46,8 +46,8 @@ func (h *AppArrayHub) OnFirstConnected() {
 }
 
 func (h *AppArrayHub) OnConnected(string) {
-	h.OnFirstConnected()
 	h.Groups().AddToGroup(h.path, h.ConnectionID())
+	h.OnFirstConnected()
 	log.Printf("%s is connected on : %s\n", h.ConnectionID(), h.path)
 }
 

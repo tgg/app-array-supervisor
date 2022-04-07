@@ -14,6 +14,7 @@ const (
 type ConcurrentContext interface {
 	Models() map[string]model.Application
 	AppHubs() map[string]*AppArrayHub
+	Paths() map[string][]string
 	ModelHub() *ModelHub
 	Router() *MuxRouterSignalR
 	SetModelHub(*ModelHub)
@@ -24,6 +25,7 @@ type ConcurrentContext interface {
 type AppArrayContext struct {
 	cm         sync.RWMutex
 	models     map[string]model.Application
+	paths      map[string][]string
 	appHub     map[string]*AppArrayHub
 	modelHub   *ModelHub
 	router     *MuxRouterSignalR
@@ -34,6 +36,7 @@ var (
 	globalCtx = context.WithValue(context.TODO(), AppArrayContextId,
 		&AppArrayContext{
 			models:     map[string]model.Application{},
+			paths:      map[string][]string{},
 			appHub:     map[string]*AppArrayHub{},
 			clientHost: map[string]*ssh.Client{},
 		})
@@ -47,6 +50,12 @@ func (a *AppArrayContext) Models() map[string]model.Application {
 	a.cm.RLock()
 	defer a.cm.RUnlock()
 	return a.models
+}
+
+func (a *AppArrayContext) Paths() map[string][]string {
+	a.cm.RLock()
+	defer a.cm.RUnlock()
+	return a.paths
 }
 
 func (a *AppArrayContext) AppHubs() map[string]*AppArrayHub {

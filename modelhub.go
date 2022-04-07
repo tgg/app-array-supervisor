@@ -29,9 +29,14 @@ func (h *ModelHub) SendModel(message string) {
 	} else {
 		ok, msg, ids := saveModel(a)
 		if ok {
-			resp = NewNewModelResponse(a.Id, ids)
+			var resp CustomHubResponse
+			if msg != "" {
+				resp = NewExistingModelResponse(a.Id, ids, msg)
+			} else {
+				resp = NewNewModelResponse(a.Id, ids)
+				h.UpdateClients(resp, "newModelReceived")
+			}
 			h.SendResponseCaller(resp, "sendModelResponse")
-			h.UpdateClients(resp, "newModelReceived")
 		} else {
 			h.SendResponseCaller(NewErrorResponse(msg), "sendModelResponse")
 		}
@@ -49,7 +54,7 @@ func saveModel(app model.Application) (bool, string, []string) {
 			return false, fmt.Sprintf("Model received but no signalr endpoint created : no environments provided for %s", app.Id), []string{}
 		}
 	} else {
-		return false, fmt.Sprintf("Trying to register new model but model with id %s already exists", foundApp.Id), []string{}
+		return true, fmt.Sprintf("Trying to register new model but model with id %s already exists", foundApp.Id), c.Paths()[foundApp.Id]
 	}
 }
 
@@ -60,6 +65,7 @@ func createHubs(app model.Application) []string {
 		hub := NewAppArrayHub(app, env)
 		c.AppHubs()[env.FormattedId()] = hub
 		c.Router().RegisterSignalRRoute(fmt.Sprintf("/%s/%s", app.FormattedId(), env.FormattedId()), hub)
+		c.Paths()[app.FormattedId()] = append(c.Paths()[app.FormattedId()], hub.GetPath())
 		res = append(res, hub.GetPath())
 	}
 	return res

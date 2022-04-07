@@ -7,6 +7,7 @@ const (
 
 const (
 	TypeError           = "Error"
+	TypeExistingModel   = "ExistingModel"
 	TypeNewModel        = "NewModel"
 	TypeMessage         = "Message"
 	TypeUpdate          = "Update"
@@ -26,7 +27,8 @@ type CustomHubResponse struct {
 
 type NewModelResponse struct {
 	Id    string   `json:"id"`
-	Paths []string `json:"path"`
+	Paths []string `json:"paths"`
+	Msg   string   `json:"msg"`
 }
 
 type UpdateResponse struct {
@@ -57,8 +59,13 @@ func NewMessageResponse(message string) CustomHubResponse {
 }
 
 func NewNewModelResponse(id string, paths []string) CustomHubResponse {
-	inner := NewModelResponse{id, paths}
+	inner := NewModelResponse{id, paths, ""}
 	return *NewCustomHubResponse(inner, TypeNewModel, StatusOk)
+}
+
+func NewExistingModelResponse(id string, paths []string, msg string) CustomHubResponse {
+	inner := NewModelResponse{id, paths, msg}
+	return *NewCustomHubResponse(inner, TypeExistingModel, StatusOk)
 }
 
 func NewUpdateResponse(componentId string, status int) CustomHubResponse {

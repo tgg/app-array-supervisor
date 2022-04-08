@@ -51,10 +51,14 @@ func (h *AppArrayHub) OnConnected(string) {
 	log.Printf("%s is connected on : %s\n", h.ConnectionID(), h.path)
 }
 
-type SendCommandRequest struct {
+type SendCommandInfo struct {
 	CommandId string `json:"commandId"`
 	Command   string `json:"command"`
-	Component string `json:"id"`
+}
+
+type SendCommandRequest struct {
+	SendCommandInfo
+	ComponentId string `json:"componentId"`
 }
 
 func ReceiveSendCommandRequest(message string) SendCommandRequest {
@@ -95,11 +99,11 @@ func (h *AppArrayHub) SendCommand(message string) {
 	log.Printf("Route %s : %s sent: %s\n", h.path, h.ConnectionID(), message)
 	req := ReceiveSendCommandRequest(message)
 	if req.Command != "" {
-		if client, found := h.sshClients[req.Component]; found {
+		if client, found := h.sshClients[req.ComponentId]; found {
 			status, res := h.RunCommand(req.Command, client)
 			h.SendResponseCaller(NewCommandResponse(status, res, req), "getCommandResult")
 		} else {
-			h.SendResponseCaller(NewErrorResponse(fmt.Sprintf("No connection found for component %s", req.Component)), "statusUpdated")
+			h.SendResponseCaller(NewErrorResponse(fmt.Sprintf("No connection found for component %s", req.ComponentId)), "statusUpdated")
 		}
 	} else {
 		h.SendResponseCaller(NewErrorResponse(fmt.Sprintf("Bad request, cannot deserialize request : %s", message)), "statusUpdated")

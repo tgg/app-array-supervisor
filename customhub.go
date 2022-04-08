@@ -34,6 +34,7 @@ func (h *CustomHub) OnConnected(string) {
 
 func (h *CustomHub) OnDisconnected(string) {
 	h.Groups().RemoveFromGroup(h.path, h.ConnectionID())
+	log.Printf("%s is disconnected from : %s\n", h.ConnectionID(), h.path)
 }
 
 func (h *CustomHub) SendResponseCaller(response CustomHubResponse, target string) {

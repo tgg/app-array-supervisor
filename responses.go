@@ -38,7 +38,7 @@ type UpdateResponse struct {
 
 type CommandResponse struct {
 	UpdateResponse
-	SendCommandRequest
+	SendCommandInfo
 	Result string `json:"result"`
 }
 
@@ -82,12 +82,12 @@ func NewUpdateResponseInner(componentId string, status int) UpdateResponse {
 	return UpdateResponse{componentId, statusCode}
 }
 
-func NewCommandResponse(status int, result string, request SendCommandRequest) CustomHubResponse {
-	updateResponse := NewUpdateResponseInner(request.Component, status)
+func NewCommandResponse(status int, result string, req SendCommandRequest) CustomHubResponse {
+	updateResponse := NewUpdateResponseInner(req.ComponentId, status)
 	inner := CommandResponse{
-		UpdateResponse:     updateResponse,
-		SendCommandRequest: request,
-		Result:             result,
+		UpdateResponse:  updateResponse,
+		SendCommandInfo: req.SendCommandInfo,
+		Result:          result,
 	}
 	return *NewCustomHubResponse(inner, TypeCommandResponse, StatusOk)
 }

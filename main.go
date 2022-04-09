@@ -26,7 +26,7 @@ func main() {
 	log.Println("SignalR server created")
 
 	c := cors.New(cors.Options{
-		AllowedOrigins:   []string{"http://localhost:3000", "http://localhost"},
+		AllowedOrigins:   []string{"http://localhost:3000", "http://localhost:5000", "http://localhost"},
 		AllowCredentials: true,
 		AllowedHeaders:   []string{"X-Requested-With", "X-Signalr-User-Agent"},
 	})

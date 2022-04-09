@@ -20,16 +20,21 @@ type ConcurrentContext interface {
 	SetModelHub(*ModelHub)
 	SetRouter(*MuxRouterSignalR)
 	GetClientHosts() map[string]*ssh.Client
+	GetAuthManagers() []AuthenticationManagerInterface
+	AddAuthManagers(am AuthenticationManagerInterface)
 }
 
 type AppArrayContext struct {
-	cm         sync.RWMutex
-	models     map[string]model.Application
-	paths      map[string][]string
-	appHub     map[string]*AppArrayHub
-	modelHub   *ModelHub
-	router     *MuxRouterSignalR
-	clientHost map[string]*ssh.Client
+	cm       sync.RWMutex
+	models   map[string]model.Application
+	paths    map[string][]string
+	appHub   map[string]*AppArrayHub
+	modelHub *ModelHub
+	router   *MuxRouterSignalR
+
+	//TODO: should be per client
+	clientHost   map[string]*ssh.Client
+	authManagers []AuthenticationManagerInterface
 }
 
 var (
@@ -88,4 +93,12 @@ func (a *AppArrayContext) SetRouter(router *MuxRouterSignalR) {
 
 func (a *AppArrayContext) SetModelHub(hub *ModelHub) {
 	a.modelHub = hub
+}
+
+func (a *AppArrayContext) AddAuthManagers(am AuthenticationManagerInterface) {
+	a.authManagers = append(a.authManagers, am)
+}
+
+func (a *AppArrayContext) GetAuthManagers() []AuthenticationManagerInterface {
+	return a.authManagers
 }

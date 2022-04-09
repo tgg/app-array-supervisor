@@ -25,7 +25,7 @@ func (h *ModelHub) SendModel(message string) {
 	err := json.Unmarshal([]byte(message), &a)
 	if err != nil {
 		resp = NewErrorResponse(fmt.Sprintf("Incorrect model %s", err))
-		h.SendResponseCaller(resp, "sendModelResponse")
+		h.SendResponseCaller(resp, SendModelListener)
 	} else {
 		ok, msg, ids := saveModel(a)
 		if ok {
@@ -34,11 +34,11 @@ func (h *ModelHub) SendModel(message string) {
 				resp = NewExistingModelResponse(a.Id, ids, msg)
 			} else {
 				resp = NewNewModelResponse(a.Id, ids)
-				h.UpdateClients(resp, "newModelReceived")
+				h.UpdateClients(resp, ModelReceivedListener)
 			}
-			h.SendResponseCaller(resp, "sendModelResponse")
+			h.SendResponseCaller(resp, SendModelListener)
 		} else {
-			h.SendResponseCaller(NewErrorResponse(msg), "sendModelResponse")
+			h.SendResponseCaller(NewErrorResponse(msg), SendModelListener)
 		}
 	}
 }

@@ -6,12 +6,14 @@ const (
 )
 
 const (
-	TypeError           = "Error"
-	TypeExistingModel   = "ExistingModel"
-	TypeNewModel        = "NewModel"
-	TypeMessage         = "Message"
-	TypeUpdate          = "Update"
-	TypeCommandResponse = "CommandResponse"
+	TypeError              = "Error"
+	TypeExistingModel      = "ExistingModel"
+	TypeNewModel           = "NewModel"
+	TypeMessage            = "Message"
+	TypeInfo               = "Info"
+	TypeUpdate             = "Update"
+	TypeCommandResponse    = "CommandResponse"
+	TypeCredentialResponse = "CredentialResponse"
 )
 
 const (
@@ -56,6 +58,14 @@ func NewErrorResponse(message string) CustomHubResponse {
 
 func NewMessageResponse(message string) CustomHubResponse {
 	return *NewCustomHubResponse(message, TypeMessage, StatusOk)
+}
+
+func NewInfoResponse(message string) CustomHubResponse {
+	return *NewCustomHubResponse(message, TypeInfo, StatusOk)
+}
+
+func NewCredentialResponse(message string) CustomHubResponse {
+	return *NewCustomHubResponse(message, TypeCredentialResponse, StatusError)
 }
 
 func NewNewModelResponse(id string, paths []string) CustomHubResponse {

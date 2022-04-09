@@ -6,6 +6,14 @@ import (
 	"log"
 )
 
+const (
+	StatusUpdateListener  = "statusUpdated"
+	CommandResultListener = "getCommandResult"
+	CredentialListener    = "onCredentialResponse"
+	SendModelListener     = "sendModelResponse"
+	ModelReceivedListener = "newModelReceived"
+)
+
 type CustomHubInterface interface {
 	Initialize(hubContext signalr.HubContext)
 	OnConnected(connectionID string)

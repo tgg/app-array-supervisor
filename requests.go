@@ -19,7 +19,11 @@ type SendVaultCredentialsRequest struct {
 	Key   string `json:"key"`
 }
 
-func ReceiveRequest[R SendVaultCredentialsRequest | SendCommandRequest](message string) R {
+type SendTextCredentialsRequest struct {
+	Credentials map[string]string `json:"credentials"`
+}
+
+func ReceiveRequest[R SendVaultCredentialsRequest | SendCommandRequest | SendTextCredentialsRequest](message string) R {
 	var req R
 	_ = json.Unmarshal([]byte(message), &req)
 	return req

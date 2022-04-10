@@ -12,6 +12,7 @@ const (
 	CredentialListener    = "onCredentialResponse"
 	SendModelListener     = "sendModelResponse"
 	ModelReceivedListener = "newModelReceived"
+	TokenReceivedListener = "tokenReceived"
 )
 
 type CustomHubInterface interface {

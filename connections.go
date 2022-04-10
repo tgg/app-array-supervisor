@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"github.com/tgg/app-array-supervisor/model"
 	"golang.org/x/crypto/ssh"
@@ -9,14 +10,9 @@ import (
 	"os"
 )
 
-func GetPassword(login string) string {
+func GetPassword(login string) (string, bool) {
 	c := getAppArrayContext()
-	auths := c.GetAuthManagers()
-	pwd := ""
-	for _, auth := range auths {
-		pwd, _ = auth.GetCredentials(login)
-	}
-	return pwd
+	return c.GetAuthManager().GetCredentials(login)
 }
 
 func Auth(login string) (a ssh.AuthMethod, err error) {
@@ -33,7 +29,12 @@ func Auth(login string) (a ssh.AuthMethod, err error) {
 		return ssh.PublicKeys(signer), nil
 
 	} else {
-		return ssh.Password(GetPassword(login)), nil
+		pwd, ok := GetPassword(login)
+		if ok {
+			return ssh.Password(pwd), nil
+		} else {
+			return nil, errors.New(fmt.Sprintf("Password not found for %s", login))
+		}
 	}
 }
 
@@ -86,8 +87,10 @@ func CreateSshClientsForApplication(env model.Environment) map[string]*ssh.Clien
 		var sshClient *ssh.Client
 		if foundClient, found2 := clientHosts[cred.Host]; !found2 {
 			sshClient = CreateSshClient(cred.Host, cred.Login)
-			clientHosts[cred.Host] = sshClient
-			res[cred.Component] = sshClient
+			if sshClient != nil {
+				clientHosts[cred.Host] = sshClient
+				res[cred.Component] = sshClient
+			}
 		} else {
 			sshClient = foundClient
 			res[cred.Component] = sshClient

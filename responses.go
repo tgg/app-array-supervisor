@@ -14,6 +14,7 @@ const (
 	TypeUpdate             = "Update"
 	TypeCommandResponse    = "CommandResponse"
 	TypeCredentialResponse = "CredentialResponse"
+	TypeTokenResponse      = "TokenResponse"
 )
 
 const (
@@ -36,6 +37,12 @@ type NewModelResponse struct {
 type UpdateResponse struct {
 	ComponentId string `json:"componentId"`
 	Status      int    `json:"status"`
+}
+
+type TokenResponse struct {
+	Msg       string `json:"msg"`
+	Token     string `json:"token"`
+	PublicKey string `json:"publicKey"`
 }
 
 type CommandResponse struct {
@@ -62,10 +69,6 @@ func NewMessageResponse(message string) CustomHubResponse {
 
 func NewInfoResponse(message string) CustomHubResponse {
 	return *NewCustomHubResponse(message, TypeInfo, StatusOk)
-}
-
-func NewCredentialResponse(message string) CustomHubResponse {
-	return *NewCustomHubResponse(message, TypeCredentialResponse, StatusError)
 }
 
 func NewNewModelResponse(id string, paths []string) CustomHubResponse {
@@ -100,4 +103,13 @@ func NewCommandResponse(status int, result string, req SendCommandRequest) Custo
 		Result:          result,
 	}
 	return *NewCustomHubResponse(inner, TypeCommandResponse, StatusOk)
+}
+
+func NewCredentialResponse(message string) CustomHubResponse {
+	return *NewCustomHubResponse(message, TypeCredentialResponse, StatusError)
+}
+
+func NewTokenResponse(message string, token string, publicKey string) CustomHubResponse {
+	inner := TokenResponse{message, token, publicKey}
+	return *NewCustomHubResponse(inner, TypeTokenResponse, StatusError)
 }

@@ -8,7 +8,7 @@ import (
 
 func TestCreateSshClientsForApplication(t *testing.T) {
 	c := getAppArrayContext()
-	c.AddAuthManagers(&AuthenticationManager{map[string]string{"stephanes": "test"}})
+	c.GetAuthManager().AddProvider(NewAuthenticationProvider(map[string]string{"stephanes": "test"}))
 	app := model.Application{
 		Environments: []model.Environment{
 			{
@@ -30,7 +30,7 @@ func TestCreateSshClientsForApplication(t *testing.T) {
 
 func TestCreateSshClientsForApplicationWithVault(t *testing.T) {
 	c := getAppArrayContext()
-	c.AddAuthManagers(NewVaultAuthenticationManager("http://localhost:8200", "dev-root-token", "kv", "password"))
+	c.GetAuthManager().AddProvider(NewVaultAuthenticationProvider("http://localhost:8200", "dev-root-token", "kv", "password"))
 	app := model.Application{
 		Environments: []model.Environment{
 			{

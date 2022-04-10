@@ -7,7 +7,7 @@ import (
 	"net/url"
 )
 
-type AuthenticationManagerInterface interface {
+type AuthenticationProviderInterface interface {
 	GetCredentials(login string) (string, bool)
 }
 
@@ -16,11 +16,11 @@ const (
 	VaultList = "metadata"
 )
 
-type AuthenticationManager struct {
+type AuthenticationProvider struct {
 	passwords map[string]string
 }
 
-func (am *AuthenticationManager) GetCredentials(login string) (string, bool) {
+func (am *AuthenticationProvider) GetCredentials(login string) (string, bool) {
 	if pwd, found := am.passwords[login]; found {
 		return pwd, true
 	} else {
@@ -28,13 +28,19 @@ func (am *AuthenticationManager) GetCredentials(login string) (string, bool) {
 	}
 }
 
-type VaultAuthenticationManager struct {
+func NewAuthenticationProvider(auths map[string]string) AuthenticationProviderInterface {
+	return &AuthenticationProvider{
+		passwords: auths,
+	}
+}
+
+type VaultAuthenticationProvider struct {
 	client *vault.Client
 	path   string
 	key    string
 }
 
-func (am *VaultAuthenticationManager) GetCredentials(login string) (string, bool) {
+func (am *VaultAuthenticationProvider) GetCredentials(login string) (string, bool) {
 	dataPath := fmt.Sprintf("%s/%s/%s", am.path, VaultData, login)
 	secret, err := am.client.Logical().Read(dataPath)
 	if err != nil || secret == nil {
@@ -56,7 +62,7 @@ func (am *VaultAuthenticationManager) GetCredentials(login string) (string, bool
 	return value, true
 }
 
-func NewVaultAuthenticationManager(host string, token string, path string, key string) *VaultAuthenticationManager {
+func NewVaultAuthenticationProvider(host string, token string, path string, key string) *VaultAuthenticationProvider {
 	config := vault.DefaultConfig()
 	config.Address = host
 	client, err := vault.NewClient(config)
@@ -78,5 +84,5 @@ func NewVaultAuthenticationManager(host string, token string, path string, key s
 		log.Printf("invalid path %s for Vault %s", path, host)
 		return nil
 	}
-	return &VaultAuthenticationManager{client, path, key}
+	return &VaultAuthenticationProvider{client, path, key}
 }

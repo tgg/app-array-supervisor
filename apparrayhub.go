@@ -48,7 +48,12 @@ func (h *AppArrayHub) OnConnected(string) {
 	h.Groups().AddToGroup(h.path, h.ConnectionID())
 	log.Printf("%s is connected on : %s\n", h.ConnectionID(), h.path)
 	if len(h.credentials) > 0 && len(h.sshClients) != len(h.credentials) {
-		h.SendResponseCaller(NewCredentialResponse("Credentials needed."), CredentialListener)
+		sshClients := CreateSshClientsForApplication(h.env)
+		if len(sshClients) != len(h.credentials) {
+			h.SendResponseCaller(NewCredentialResponse("Credentials needed."), CredentialListener)
+		} else {
+			h.InitializeConnections()
+		}
 	}
 }
 
@@ -56,13 +61,15 @@ func (h *AppArrayHub) RunCommand(cmd string, client *ssh.Client) (int, string) {
 	session, err := client.NewSession()
 	res := 0
 	if err != nil {
-		log.Fatal("Failed to create session: ", err)
+		log.Printf("Failed to create session: %v\n", err)
+		return 1, ""
 	}
 	defer session.Close()
 
 	stdout, err := session.StdoutPipe()
 	if err != nil {
-		log.Fatalf("Unable to setup stdout for session: %v\n", err)
+		log.Printf("Unable to setup stdout for session: %v\n", err)
+		return 1, ""
 	}
 
 	if errCmd := session.Run(cmd); errCmd != nil {
@@ -92,15 +99,43 @@ func (h *AppArrayHub) SendCommand(message string) {
 	}
 }
 
-func (h *AppArrayHub) SendVaultCredentials(message string) {
-	req := ReceiveRequest[SendVaultCredentialsRequest](message)
+func (h *AppArrayHub) RequestToken() {
 	c := getAppArrayContext()
-	vam := NewVaultAuthenticationManager(req.Host, req.Token, req.Path, req.Key)
-	if vam != nil {
-		c.AddAuthManagers(vam)
+	pem := c.GetEncryption().GetPublicKey()
+	token, _ := c.GetAuthManager().CreateToken(h.ConnectionID(), h.GetPath())
+	h.SendResponseCaller(NewTokenResponse("", token, pem), TokenReceivedListener)
+}
+
+func (h *AppArrayHub) SendTextCredentials(message string) {
+	c := getAppArrayContext()
+	decrypted, err := c.GetEncryption().DecryptFromBase64(message)
+	if err != nil {
+		h.SendResponseCaller(NewErrorResponse("Cannot decrypt sent message"), StatusUpdateListener)
+		return
+	} else {
+		req := ReceiveRequest[SendTextCredentialsRequest](decrypted)
+		vap := NewAuthenticationProvider(req.Credentials)
+		c.GetAuthManager().AddProvider(vap)
 		h.InitializeConnections()
 		h.SendResponseCaller(NewInfoResponse("Credentials saved. Servers are accessible"), StatusUpdateListener)
+	}
+}
+
+func (h *AppArrayHub) SendVaultCredentials(message string) {
+	c := getAppArrayContext()
+	decrypted, err := c.GetEncryption().DecryptFromBase64(message)
+	if err != nil {
+		h.SendResponseCaller(NewErrorResponse("Cannot decrypt sent message"), StatusUpdateListener)
+		return
 	} else {
-		h.SendResponseCaller(NewCredentialResponse("Vault credentials incorrect. Retry."), CredentialListener)
+		req := ReceiveRequest[SendVaultCredentialsRequest](decrypted)
+		vap := NewVaultAuthenticationProvider(req.Host, req.Token, req.Path, req.Key)
+		if vap != nil {
+			c.GetAuthManager().AddProvider(vap)
+			h.InitializeConnections()
+			h.SendResponseCaller(NewInfoResponse("Credentials saved. Servers are accessible"), StatusUpdateListener)
+		} else {
+			h.SendResponseCaller(NewCredentialResponse("Vault credentials incorrect. Retry."), CredentialListener)
+		}
 	}
 }

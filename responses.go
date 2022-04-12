@@ -6,15 +6,16 @@ const (
 )
 
 const (
-	TypeError              = "Error"
-	TypeExistingModel      = "ExistingModel"
-	TypeNewModel           = "NewModel"
-	TypeMessage            = "Message"
-	TypeInfo               = "Info"
-	TypeUpdate             = "Update"
-	TypeCommandResponse    = "CommandResponse"
-	TypeCredentialResponse = "CredentialResponse"
-	TypeTokenResponse      = "TokenResponse"
+	TypeError                   = "Error"
+	TypeExistingModel           = "ExistingModel"
+	TypeNewModel                = "NewModel"
+	TypeMessage                 = "Message"
+	TypeInfo                    = "Info"
+	TypeUpdate                  = "Update"
+	TypeCommandResponse         = "CommandResponse"
+	TypeCommandDownloadResponse = "CommandDownloadResponse"
+	TypeCredentialResponse      = "CredentialResponse"
+	TypeTokenResponse           = "TokenResponse"
 )
 
 const (
@@ -49,6 +50,11 @@ type CommandResponse struct {
 	UpdateResponse
 	SendCommandInfo
 	Result string `json:"result"`
+}
+
+type CommandDownloadResponse struct {
+	CommandResponse
+	Filename string `json:"filename"`
 }
 
 func NewCustomHubResponse(message any, jsonType string, statusCode int) *CustomHubResponse {
@@ -95,14 +101,28 @@ func NewUpdateResponseInner(componentId string, status int) UpdateResponse {
 	return UpdateResponse{componentId, statusCode}
 }
 
-func NewCommandResponse(status int, result string, req SendCommandRequest) CustomHubResponse {
+func NewCommandResponseInner(status int, result string, req SendCommandRequest) CommandResponse {
 	updateResponse := NewUpdateResponseInner(req.ComponentId, status)
 	inner := CommandResponse{
 		UpdateResponse:  updateResponse,
 		SendCommandInfo: req.SendCommandInfo,
 		Result:          result,
 	}
+	return inner
+}
+
+func NewCommandResponse(status int, result string, req SendCommandRequest) CustomHubResponse {
+	inner := NewCommandResponseInner(status, result, req)
 	return *NewCustomHubResponse(inner, TypeCommandResponse, StatusOk)
+}
+
+func NewCommandDownloadResponse(status int, result string, filename string, req SendCommandRequest) CustomHubResponse {
+	commandResponse := NewCommandResponseInner(status, result, req)
+	inner := CommandDownloadResponse{
+		CommandResponse: commandResponse,
+		Filename:        filename,
+	}
+	return *NewCustomHubResponse(inner, TypeCommandDownloadResponse, StatusOk)
 }
 
 func NewCredentialResponse(message string) CustomHubResponse {

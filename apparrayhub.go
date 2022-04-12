@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"github.com/pkg/sftp"
 	"github.com/tgg/app-array-supervisor/model"
 	"golang.org/x/crypto/ssh"
 	"io"
@@ -84,13 +85,38 @@ func (h *AppArrayHub) RunCommand(cmd string, client *ssh.Client) (int, string) {
 	return res, buf.String()
 }
 
+func (h *AppArrayHub) DownloadFile(path string, client *ssh.Client) (int, string, string) {
+	sftpClient, err := sftp.NewClient(client)
+	if err != nil {
+		log.Printf("Failed to open sftp session : %v", err)
+		return 1, "", ""
+	}
+
+	file, err := sftpClient.Open(path)
+	if err != nil {
+		log.Printf("Could not open file %s : %v", path, err)
+		return 1, "", ""
+	}
+
+	buf := new(strings.Builder)
+	file.WriteTo(buf)
+	return 0, buf.String(), file.Name()
+}
+
 func (h *AppArrayHub) SendCommand(message string) {
 	log.Printf("Route %s : %s sent: %s\n", h.path, h.ConnectionID(), message)
 	req := ReceiveRequest[SendCommandRequest](message)
 	if req.Command != "" {
 		if client, found := h.sshClients[req.ComponentId]; found {
-			status, res := h.RunCommand(req.Command, client)
-			h.SendResponseCaller(NewCommandResponse(status, res, req), CommandResultListener)
+			var res, filename string
+			var status int
+			if req.CommandId == model.CommandDownload {
+				status, res, filename = h.DownloadFile(req.Command, client)
+				h.SendResponseCaller(NewCommandDownloadResponse(status, res, filename, req), CommandResultListener)
+			} else {
+				status, res = h.RunCommand(req.Command, client)
+				h.SendResponseCaller(NewCommandResponse(status, res, req), CommandResultListener)
+			}
 		} else {
 			h.SendResponseCaller(NewErrorResponse(fmt.Sprintf("No connection found for component %s", req.ComponentId)), StatusUpdateListener)
 		}

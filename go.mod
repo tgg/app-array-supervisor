@@ -6,6 +6,7 @@ require (
 	github.com/gorilla/mux v1.8.0
 	github.com/hashicorp/vault/api v1.4.1
 	github.com/philippseith/signalr v0.5.2
+	github.com/pkg/sftp v1.13.4
 	github.com/rs/cors v1.7.0
 	github.com/tebeka/atexit v0.3.0
 	golang.org/x/crypto v0.0.0-20211215153901-e495a2d5b3d3
@@ -48,6 +49,7 @@ require (
 	github.com/hashicorp/vault/sdk v0.4.1 // indirect
 	github.com/hashicorp/yamux v0.0.0-20180604194846-3520598351bb // indirect
 	github.com/klauspost/compress v1.13.6 // indirect
+	github.com/kr/fs v0.1.0 // indirect
 	github.com/mattn/go-colorable v0.1.8 // indirect
 	github.com/mattn/go-isatty v0.0.14 // indirect
 	github.com/mitchellh/copystructure v1.0.0 // indirect

@@ -18,7 +18,7 @@ func TestCreateSshClientsForApplication(t *testing.T) {
 			},
 		},
 	}
-	clients := CreateSshClientsForApplication(app)
+	clients := CreateSshClientsForApplication(app.Environments[0])
 	assert.EqualValues(t, 2, len(clients))
 	assert.EqualValues(t, 1, len(getAppArrayContext().GetClientHosts()))
 	for _, v := range getAppArrayContext().GetClientHosts() {

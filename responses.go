@@ -7,6 +7,7 @@ const (
 
 const (
 	TypeError           = "Error"
+	TypeExistingModel   = "ExistingModel"
 	TypeNewModel        = "NewModel"
 	TypeMessage         = "Message"
 	TypeUpdate          = "Update"
@@ -25,8 +26,9 @@ type CustomHubResponse struct {
 }
 
 type NewModelResponse struct {
-	Id   string `json:"id"`
-	Path string `json:"path"`
+	Id    string   `json:"id"`
+	Paths []string `json:"paths"`
+	Msg   string   `json:"msg"`
 }
 
 type UpdateResponse struct {
@@ -36,7 +38,7 @@ type UpdateResponse struct {
 
 type CommandResponse struct {
 	UpdateResponse
-	SendCommandRequest
+	SendCommandInfo
 	Result string `json:"result"`
 }
 
@@ -56,9 +58,14 @@ func NewMessageResponse(message string) CustomHubResponse {
 	return *NewCustomHubResponse(message, TypeMessage, StatusOk)
 }
 
-func NewNewModelResponse(id string, path string) CustomHubResponse {
-	inner := NewModelResponse{id, path}
+func NewNewModelResponse(id string, paths []string) CustomHubResponse {
+	inner := NewModelResponse{id, paths, ""}
 	return *NewCustomHubResponse(inner, TypeNewModel, StatusOk)
+}
+
+func NewExistingModelResponse(id string, paths []string, msg string) CustomHubResponse {
+	inner := NewModelResponse{id, paths, msg}
+	return *NewCustomHubResponse(inner, TypeExistingModel, StatusOk)
 }
 
 func NewUpdateResponse(componentId string, status int) CustomHubResponse {
@@ -75,12 +82,12 @@ func NewUpdateResponseInner(componentId string, status int) UpdateResponse {
 	return UpdateResponse{componentId, statusCode}
 }
 
-func NewCommandResponse(status int, result string, request SendCommandRequest) CustomHubResponse {
-	updateResponse := NewUpdateResponseInner(request.Component, status)
+func NewCommandResponse(status int, result string, req SendCommandRequest) CustomHubResponse {
+	updateResponse := NewUpdateResponseInner(req.ComponentId, status)
 	inner := CommandResponse{
-		UpdateResponse:     updateResponse,
-		SendCommandRequest: request,
-		Result:             result,
+		UpdateResponse:  updateResponse,
+		SendCommandInfo: req.SendCommandInfo,
+		Result:          result,
 	}
 	return *NewCustomHubResponse(inner, TypeCommandResponse, StatusOk)
 }

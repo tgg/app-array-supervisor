@@ -9,7 +9,17 @@ import (
 	"os"
 )
 
-func Auth() (a ssh.AuthMethod, err error) {
+func GetVarFromHost(host string, name string) string {
+	prefix := ""
+	if host == "localhost" {
+		prefix = "LOCALHOST"
+	} else {
+		prefix = "OTHER"
+	}
+	return os.Getenv(fmt.Sprintf("%s_%s", prefix, name))
+}
+
+func Auth(host string) (a ssh.AuthMethod, err error) {
 	env := os.Getenv("REMOTE_SERVER_PK")
 	if env != "" {
 		key, err := ioutil.ReadFile(env)
@@ -23,17 +33,17 @@ func Auth() (a ssh.AuthMethod, err error) {
 		return ssh.PublicKeys(signer), nil
 
 	} else {
-		return ssh.Password(os.Getenv("REMOTE_SERVER_PASSWORD")), nil
+		return ssh.Password(GetVarFromHost(host, "PASSWORD")), nil
 	}
 }
 
 func CreateSshClient(host string) *ssh.Client {
-	auth, err := Auth()
+	auth, err := Auth(host)
 	if err != nil {
 		log.Fatal("Failed to get authentication method: ", err)
 	}
 	config := &ssh.ClientConfig{
-		User: os.Getenv("REMOTE_SERVER_USERNAME"),
+		User: GetVarFromHost(host, "USERNAME"),
 		Auth: []ssh.AuthMethod{
 			auth,
 		},
@@ -49,22 +59,19 @@ func CreateSshClient(host string) *ssh.Client {
 }
 
 //Returns map for component / ssh.client
-func CreateSshClientsForApplication(app model.Application) map[string]*ssh.Client {
+func CreateSshClientsForApplication(env model.Environment) map[string]*ssh.Client {
 	res := map[string]*ssh.Client{}
-	if len(app.Environments) != 0 {
-		env := app.Environments[0]
-		for componentId, v := range env.Context {
-			if host, found := v["host"]; found {
-				clientHosts := getAppArrayContext().GetClientHosts()
-				var sshClient *ssh.Client
-				if foundClient, found2 := clientHosts[host]; !found2 {
-					sshClient = CreateSshClient(host)
-					clientHosts[host] = sshClient
-				} else {
-					sshClient = foundClient
-				}
-				res[componentId] = sshClient
+	for componentId, v := range env.Context {
+		if host, found := v["host"]; found {
+			clientHosts := getAppArrayContext().GetClientHosts()
+			var sshClient *ssh.Client
+			if foundClient, found2 := clientHosts[host]; !found2 {
+				sshClient = CreateSshClient(host)
+				clientHosts[host] = sshClient
+			} else {
+				sshClient = foundClient
 			}
+			res[componentId] = sshClient
 		}
 	}
 	return res

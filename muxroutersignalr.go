@@ -79,7 +79,6 @@ func (router *MuxRouterSignalR) RegisterSignalRRoute(path string, hub CustomHubI
 			signalr.Logger(logger, false))
 		server.MapHTTP(WithMuxRouter(router), path)
 		log.Printf("SignalR route %s registered\n", path)
-		hub.RunRoutines()
 	} else {
 		log.Printf("SignalR route %s not registered, it already exists\n", path)
 	}

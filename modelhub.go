@@ -27,30 +27,46 @@ func (h *ModelHub) SendModel(message string) {
 		resp = NewErrorResponse(fmt.Sprintf("Incorrect model %s", err))
 		h.SendResponseCaller(resp, "sendModelResponse")
 	} else {
-		ok, msg := saveModel(a)
+		ok, msg, ids := saveModel(a)
 		if ok {
-			resp = NewNewModelResponse(a.Id, getAppArrayContext().AppHubs()[a.Id].GetPath())
+			var resp CustomHubResponse
+			if msg != "" {
+				resp = NewExistingModelResponse(a.Id, ids, msg)
+			} else {
+				resp = NewNewModelResponse(a.Id, ids)
+				h.UpdateClients(resp, "newModelReceived")
+			}
 			h.SendResponseCaller(resp, "sendModelResponse")
-			h.UpdateClients(resp, "newModelReceived")
 		} else {
 			h.SendResponseCaller(NewErrorResponse(msg), "sendModelResponse")
 		}
 	}
 }
 
-func saveModel(app model.Application) (bool, string) {
+func saveModel(app model.Application) (bool, string, []string) {
 	c := getAppArrayContext()
-	if foundApp, ok := c.Models()[app.Id]; !ok {
-		c.Models()[app.Id] = app
-		hub := NewAppArrayHub(app)
-		if foundHub, ok2 := c.AppHubs()[app.Id]; !ok2 {
-			c.AppHubs()[app.Id] = hub
-			c.Router().RegisterSignalRRoute(fmt.Sprintf("/%s", app.Id), hub)
-			return true, ""
+	if foundApp, ok := c.Models()[app.FormattedId()]; !ok {
+		res := createHubs(app)
+		if len(res) != 0 {
+			c.Models()[app.FormattedId()] = app
+			return true, "", res
 		} else {
-			return false, fmt.Sprintf("Trying to register new hub for id %s but it already exists", foundHub.GetPath())
+			return false, fmt.Sprintf("Model received but no signalr endpoint created : no environments provided for %s", app.Id), []string{}
 		}
 	} else {
-		return false, fmt.Sprintf("Trying to register new model but model with id %s already exists", foundApp.Id)
+		return true, fmt.Sprintf("Trying to register new model but model with id %s already exists", foundApp.Id), c.Paths()[foundApp.Id]
 	}
+}
+
+func createHubs(app model.Application) []string {
+	c := getAppArrayContext()
+	var res []string
+	for _, env := range app.Environments {
+		hub := NewAppArrayHub(app, env)
+		c.AppHubs()[env.FormattedId()] = hub
+		c.Router().RegisterSignalRRoute(fmt.Sprintf("/%s/%s", app.FormattedId(), env.FormattedId()), hub)
+		c.Paths()[app.FormattedId()] = append(c.Paths()[app.FormattedId()], hub.GetPath())
+		res = append(res, hub.GetPath())
+	}
+	return res
 }

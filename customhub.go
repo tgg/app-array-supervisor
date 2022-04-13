@@ -12,19 +12,11 @@ type CustomHubInterface interface {
 	OnDisconnected(connectionID string)
 	SetPath(path string)
 	GetPath() string
-	RunRoutines()
 }
 
 type CustomHub struct {
 	signalr.Hub
-	path     string
-	routines []StatusRoutineInterface
-}
-
-func (h *CustomHub) RunRoutines() {
-	for _, routine := range h.routines {
-		routine.Run()
-	}
+	path string
 }
 
 func (h *CustomHub) SetPath(path string) {
@@ -42,6 +34,7 @@ func (h *CustomHub) OnConnected(string) {
 
 func (h *CustomHub) OnDisconnected(string) {
 	h.Groups().RemoveFromGroup(h.path, h.ConnectionID())
+	log.Printf("%s is disconnected from : %s\n", h.ConnectionID(), h.path)
 }
 
 func (h *CustomHub) SendResponseCaller(response CustomHubResponse, target string) {

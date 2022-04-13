@@ -62,7 +62,8 @@ type Port struct {
 	Protocol string         `json:"protocol,omitempty"`
 }
 
-type Context map[string][]string
+type Context map[string]map[string]string
+type ContextExport map[string]any
 
 type Environment struct {
 	Context
@@ -82,35 +83,44 @@ type Application struct {
 	Provides     []Port        `json:"provides,omitempty"`
 	Consumes     []PortId      `json:"consumes,omitempty"`
 	Components   []Component   `json:"components"`
-	Environments []Environment `json:"environments,omitempty"`
+	Environments []Environment `json:"environments"`
 }
 
 // Because we want this model to follow TypeScript we need to
 // refine marshaling / unmarshalling
 func (e *Environment) MarshalJSON() ([]byte, error) {
 	// We need to encode the Context, then add Id
-	copy := make(Context)
+	copy := make(ContextExport)
 	// Warning: we are not doing a deep copy here.
 	for key, value := range e.Context {
 		copy[key] = value
 	}
-	copy["id"] = []string{e.Id}
+	copy["id"] = e.Id
 	return json.Marshal(copy)
 }
 
 func (e *Environment) UnmarshalJSON(data []byte) error {
-	err := json.Unmarshal(data, &e.Context)
+	contextExport := ContextExport{}
+	e.Context = Context{}
+	err := json.Unmarshal(data, &contextExport)
 
 	if err != nil {
 		return err
 	}
 
-	if ids, ok := e.Context["id"]; !ok || len(ids) != 1 {
+	if id, ok := contextExport["id"]; !ok {
 		return errors.New(`Missing or incorrect "id" field`)
-
 	} else {
-		e.Id = ids[0]
-		delete(e.Context, "id")
+		e.Id = id.(string)
+		delete(contextExport, "id")
+		for key, value := range contextExport {
+			valueMap := value.(map[string]any)
+			e.Context[key] = map[string]string{}
+			for k, v := range valueMap {
+				e.Context[key][k] = v.(string)
+			}
+		}
 		return nil
 	}
+	return nil
 }

@@ -45,7 +45,8 @@ func TestTagMapMarshal(t *testing.T) {
 func TestEnvironmentMarshalUnmarshal(t *testing.T) {
 	env := Environment{
 		Context{
-			"this": []string{"that"},
+			"Copier": map[string]string{"source": "file:///tmp/app/in", "host": "localhost"},
+			"Zipper": map[string]string{"output": "file:///tmp/my.tgz"},
 		},
 		"This environment",
 	}
@@ -55,8 +56,9 @@ func TestEnvironmentMarshalUnmarshal(t *testing.T) {
 		t.Errorf(`Marshalling failed: %q`, err)
 	}
 
-	if `{"id":["This environment"],"this":["that"]}` != string(b) {
-		t.Errorf(`{"id":["This environment"],"this":["that"]} serialized as %s`, string(b))
+	res := `{"Copier":{"host":"localhost","source":"file:///tmp/app/in"},"Zipper":{"output":"file:///tmp/my.tgz"},"id":"This environment"}`
+	if res != string(b) {
+		t.Errorf(`%s serialized as %s`, res, string(b))
 	}
 
 	var env2 Environment
@@ -69,6 +71,15 @@ func TestEnvironmentMarshalUnmarshal(t *testing.T) {
 
 func TestApplicationUnmarshal(t *testing.T) {
 	const m string = `{"id":"FOApp","type":"application","components":[{"id":"Database","type":"component","tags":{"group":"core","type":"database"},"provides":[{"id":"raw data","kind":6}]},{"id":"EventBus","type":"component","tags":{"group":"core"},"commands":{"start":{"type":"javascript","steps":["StartComponent"]},"stop":{"type":"javascript","steps":["StopComponent"]}},"provides":[{"id":"raw events","kind":6}]},{"id":"Cache","type":"component","tags":{"group":"core"},"consumes":["raw events","raw data"]},{"id":"PositionService","type":"component","tags":{"group":"TradePosition"},"provides":[{"id":"/api/Position","object":"Position","kind":2,"protocol":"REST"}],"consumes":["raw events","raw data"]},{"id":"Spreadsheet","type":"component","tags":{"group":"TradePosition"},"consumes":["/api/Position"]}]}`
+	var a Application
+	err := json.Unmarshal([]byte(m), &a)
+	if err != nil {
+		t.Errorf(`Deserialisation of %v failed`, m)
+	}
+}
+
+func TestNewApplicationUnmarshal(t *testing.T) {
+	const m string = `{"id":"Demo","type":"application","components":[{"id":"Copier","type":"component","commands":{"start":{"type":"shell","steps":["/app/bin/server.sh start"]},"stop":{"type":"shell","steps":["/app/bin/server.sh stop"]},"status":{"type":"shell","steps":["/app/bin/server.sh status"]}},"provides":[{"id":"source","kind":4},{"id":"destination","kind":2}]},{"id":"Zipper","type":"component","tags":{"type":"batch"},"commands":{"start":{"type":"shell","steps":["/app/bin/batch.sh"]}},"provides":[{"id":"output","kind":2}],"consumes":["destination"]}],"environments":[{"id":"my own machine","Copier":{"host":"localhost","source":"file:///tmp/app/in","destination":"file:///tmp/app/out"},"Zipper":{"host":"localhost","output":"file:///tmp/my.tgz"}}]}`
 	var a Application
 	err := json.Unmarshal([]byte(m), &a)
 	if err != nil {

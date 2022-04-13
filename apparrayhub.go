@@ -1,8 +1,9 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
-	"github.com/philippseith/signalr"
+	"github.com/tgg/app-array-supervisor/model"
 	"golang.org/x/crypto/ssh"
 	"io"
 	"log"
@@ -10,22 +11,38 @@ import (
 )
 
 type AppArrayHub struct {
-	signalr.Hub
-	sshClient *ssh.Client
+	CustomHub
+	sshClients map[string]*ssh.Client
 }
 
-func (h *AppArrayHub) OnConnected(string) {
-	fmt.Printf("%s is connected\n", h.ConnectionID())
+func NewAppArrayHub(app model.Application) *AppArrayHub {
+	hub := &AppArrayHub{
+		sshClients: CreateSshClientsForApplication(app),
+	}
+	if len(app.Environments) != 0 {
+		hub.routines = append(hub.routines, NewStatusRoutine(app, app.Environments[0], hub))
+	}
+	return hub
 }
 
-func (h *AppArrayHub) Coucou(message string) {
-
+type SendCommandRequest struct {
+	CommandId string `json:"commandId"`
+	Command   string `json:"command"`
+	Component string `json:"id"`
 }
 
-func (h *AppArrayHub) SendCommand(message string) {
-	fmt.Printf("%s sent: %s\n", h.ConnectionID(), message)
+func ReceiveSendCommandRequest(message string) SendCommandRequest {
+	var req SendCommandRequest
+	err := json.Unmarshal([]byte(message), &req)
+	if err != nil {
+		req = SendCommandRequest{}
+	}
+	return req
+}
 
-	session, err := h.sshClient.NewSession()
+func (h *AppArrayHub) RunCommand(cmd string, client *ssh.Client) (int, string) {
+	session, err := client.NewSession()
+	res := 0
 	if err != nil {
 		log.Fatal("Failed to create session: ", err)
 	}
@@ -36,13 +53,29 @@ func (h *AppArrayHub) SendCommand(message string) {
 		log.Fatalf("Unable to setup stdout for session: %v\n", err)
 	}
 
-	if err := session.Run(string(message)); err != nil {
-		log.Printf("Error running command: %v", err)
+	if errCmd := session.Run(cmd); errCmd != nil {
+		log.Printf("Error running command: %v", errCmd)
+		if sshErr, isExitError := errCmd.(*ssh.ExitError); isExitError {
+			res = sshErr.ExitStatus()
+		}
 	}
 
 	buf := new(strings.Builder)
 	io.Copy(buf, stdout)
+	return res, buf.String()
+}
 
-	h.Clients().Client(h.ConnectionID()).Send("statusUpdated", buf.String())
-	h.Clients().All().Send("statusUpdated", h.ConnectionID()+" sent "+message)
+func (h *AppArrayHub) SendCommand(message string) {
+	log.Printf("Route %s : %s sent: %s\n", h.path, h.ConnectionID(), message)
+	req := ReceiveSendCommandRequest(message)
+	if req.Command != "" {
+		if client, found := h.sshClients[req.Component]; found {
+			status, res := h.RunCommand(req.Command, client)
+			h.SendResponseCaller(NewCommandResponse(status, res, req), "getCommandResult")
+		} else {
+			h.SendResponseCaller(NewErrorResponse(fmt.Sprintf("No connection found for component %s", req.Component)), "statusUpdated")
+		}
+	} else {
+		h.SendResponseCaller(NewErrorResponse(fmt.Sprintf("Bad request, cannot deserialize request : %s", message)), "statusUpdated")
+	}
 }

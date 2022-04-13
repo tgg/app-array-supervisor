@@ -1,33 +1,20 @@
 package main
 
 import (
+	"context"
 	"fmt"
-	"io"
+	"github.com/rs/cors"
 	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
+	"time"
 
-	"github.com/gorilla/websocket"
+	kitlog "github.com/go-kit/kit/log"
+	"github.com/gorilla/mux"
+	"github.com/philippseith/signalr"
 	"golang.org/x/crypto/ssh"
 )
-
-var upgrader = websocket.Upgrader{
-	ReadBufferSize:  1024,
-	WriteBufferSize: 1024,
-	CheckOrigin:     func(r *http.Request) bool { return true },
-}
-
-type wsWriter struct {
-	con     *websocket.Conn
-	msgType int
-}
-
-func (w *wsWriter) Write(msg []byte) (n int, err error) {
-	n = len(msg)
-	err = w.con.WriteMessage(w.msgType, msg)
-	return n, err
-}
 
 func auth() (a ssh.AuthMethod, err error) {
 	env := os.Getenv("REMOTE_SERVER_PK")
@@ -66,43 +53,37 @@ func main() {
 	}
 	fmt.Printf("Connected to ssh server %v:%v\n", os.Getenv("REMOTE_SERVER_HOST"), os.Getenv("REMOTE_SERVER_PORT"))
 	defer client.Close()
-	http.HandleFunc("/shell", func(w http.ResponseWriter, r *http.Request) {
 
-		conn, err := upgrader.Upgrade(w, r, nil)
+	hub := &AppArrayHub{
+		sshClient: client,
+	}
 
-		if err != nil {
-			log.Fatalln(err)
-		}
+	server, _ := signalr.NewServer(context.TODO(),
+		signalr.UseHub(hub),
+		signalr.InsecureSkipVerify(true),
+		signalr.KeepAliveInterval(2*time.Second),
+		signalr.Logger(kitlog.NewLogfmtLogger(os.Stderr), false))
 
-		for {
-			// Read message from browser
-			msgType, msg, err := conn.ReadMessage()
-			if err != nil {
-				return
-			}
+	router := &MuxRouterSignalR{
+		Router: mux.NewRouter(),
+	}
 
-			// Print the message to the console
-			fmt.Printf("%s sent: %s\n", conn.RemoteAddr(), string(msg))
-
-			session, err := client.NewSession()
-			if err != nil {
-				log.Fatal("Failed to create session: ", err)
-			}
-			defer session.Close()
-
-			stdout, err := session.StdoutPipe()
-			if err != nil {
-				log.Fatalf("Unable to setup stdout for session: %v\n", err)
-			}
-
-			go func() {
-				io.Copy(&wsWriter{conn, msgType}, stdout)
-			}()
-
-			if err := session.Run(string(msg)); err != nil {
-				log.Printf("Error running command: %v", err)
-			}
-		}
+	router.HandleFunc("/model/{id}", func(writer http.ResponseWriter, request *http.Request) {
+		vars := mux.Vars(request)
+		fmt.Printf("%s\n", vars["id"])
+		writer.WriteHeader(300)
 	})
-	http.ListenAndServe(":"+os.Getenv("LISTEN_PORT"), nil)
+
+	server.MapHTTP(WithMuxRouter(router), "/shell")
+	c := cors.New(cors.Options{
+		AllowedOrigins:   []string{"http://localhost:3000", "http://localhost"},
+		AllowCredentials: true,
+		AllowedHeaders:   []string{"X-Requested-With", "X-Signalr-User-Agent"},
+	})
+	handler := c.Handler(router)
+	listeningHost := "localhost:" + os.Getenv("LISTEN_PORT")
+	fmt.Printf("Listening for websocket connections on " + listeningHost)
+	if err := http.ListenAndServe(listeningHost, handler); err != nil {
+		log.Fatal("ListenAndServe:", err)
+	}
 }

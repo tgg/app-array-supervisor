@@ -32,13 +32,14 @@ func main() {
 		AllowCredentials: true,
 		AllowedHeaders:   []string{"*"},
 	})
+	log.Println("Cors allows all")
 	handler := c.Handler(router)
 	log.Println("Routes registered")
 
 	getAppArrayContext().SetRouter(router)
 	log.Println("Context configured")
 
-	listeningHost := "localhost:" + os.Getenv("LISTEN_PORT")
+	listeningHost := "0.0.0.0:" + os.Getenv("LISTEN_PORT")
 	log.Printf("Listening for websocket connections on %s\n", listeningHost)
 	if err := http.ListenAndServe(listeningHost, handler); err != nil {
 		log.Fatal("ListenAndServe:", err)

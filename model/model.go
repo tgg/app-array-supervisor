@@ -25,6 +25,13 @@ type StatusTrail struct {
 	On     string    `json:"on"`
 }
 
+const (
+	CommandStart    = "start"
+	CommandStop     = "stop"
+	CommandStatus   = "status"
+	CommandDownload = "download"
+)
+
 type Command struct {
 	Type  string   `json:"type"`
 	Steps []string `json:"steps"`

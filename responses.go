@@ -6,12 +6,15 @@ const (
 )
 
 const (
-	TypeError           = "Error"
-	TypeExistingModel   = "ExistingModel"
-	TypeNewModel        = "NewModel"
-	TypeMessage         = "Message"
-	TypeUpdate          = "Update"
-	TypeCommandResponse = "CommandResponse"
+	TypeError              = "Error"
+	TypeExistingModel      = "ExistingModel"
+	TypeNewModel           = "NewModel"
+	TypeMessage            = "Message"
+	TypeInfo               = "Info"
+	TypeUpdate             = "Update"
+	TypeCommandResponse    = "CommandResponse"
+	TypeCredentialResponse = "CredentialResponse"
+	TypeTokenResponse      = "TokenResponse"
 )
 
 const (
@@ -36,6 +39,12 @@ type UpdateResponse struct {
 	Status      int    `json:"status"`
 }
 
+type TokenResponse struct {
+	Msg       string `json:"msg"`
+	Token     string `json:"token"`
+	PublicKey string `json:"publicKey"`
+}
+
 type CommandResponse struct {
 	UpdateResponse
 	SendCommandInfo
@@ -56,6 +65,10 @@ func NewErrorResponse(message string) CustomHubResponse {
 
 func NewMessageResponse(message string) CustomHubResponse {
 	return *NewCustomHubResponse(message, TypeMessage, StatusOk)
+}
+
+func NewInfoResponse(message string) CustomHubResponse {
+	return *NewCustomHubResponse(message, TypeInfo, StatusOk)
 }
 
 func NewNewModelResponse(id string, paths []string) CustomHubResponse {
@@ -90,4 +103,13 @@ func NewCommandResponse(status int, result string, req SendCommandRequest) Custo
 		Result:          result,
 	}
 	return *NewCustomHubResponse(inner, TypeCommandResponse, StatusOk)
+}
+
+func NewCredentialResponse(message string) CustomHubResponse {
+	return *NewCustomHubResponse(message, TypeCredentialResponse, StatusError)
+}
+
+func NewTokenResponse(message string, token string, publicKey string) CustomHubResponse {
+	inner := TokenResponse{message, token, publicKey}
+	return *NewCustomHubResponse(inner, TypeTokenResponse, StatusError)
 }

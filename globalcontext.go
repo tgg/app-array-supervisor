@@ -20,6 +20,8 @@ type ConcurrentContext interface {
 	SetModelHub(*ModelHub)
 	SetRouter(*MuxRouterSignalR)
 	GetClientHosts() map[string]*ssh.Client
+	GetAuthManager() AuthenticationManagerInterface
+	GetEncryption() EncryptionInterface
 }
 
 type AppArrayContext struct {
@@ -29,16 +31,22 @@ type AppArrayContext struct {
 	appHub     map[string]*AppArrayHub
 	modelHub   *ModelHub
 	router     *MuxRouterSignalR
-	clientHost map[string]*ssh.Client
+	encryption EncryptionInterface
+
+	//TODO: should be per client
+	clientHost  map[string]*ssh.Client
+	authManager AuthenticationManagerInterface
 }
 
 var (
 	globalCtx = context.WithValue(context.TODO(), AppArrayContextId,
 		&AppArrayContext{
-			models:     map[string]model.Application{},
-			paths:      map[string][]string{},
-			appHub:     map[string]*AppArrayHub{},
-			clientHost: map[string]*ssh.Client{},
+			models:      map[string]model.Application{},
+			paths:       map[string][]string{},
+			appHub:      map[string]*AppArrayHub{},
+			clientHost:  map[string]*ssh.Client{},
+			authManager: NewAuthenticationManager(),
+			encryption:  NewRSAEncryption(),
 		})
 )
 
@@ -88,4 +96,12 @@ func (a *AppArrayContext) SetRouter(router *MuxRouterSignalR) {
 
 func (a *AppArrayContext) SetModelHub(hub *ModelHub) {
 	a.modelHub = hub
+}
+
+func (a *AppArrayContext) GetAuthManager() AuthenticationManagerInterface {
+	return a.authManager
+}
+
+func (a *AppArrayContext) GetEncryption() EncryptionInterface {
+	return a.encryption
 }

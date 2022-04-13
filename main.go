@@ -22,6 +22,7 @@ func main() {
 		Router: mux.NewRouter(),
 	}
 	router.AddHandledFunctions()
+	router.AddStaticFiles()
 	router.RegisterSignalRRoute("/model", NewModelHub())
 	log.Println("SignalR server created")
 

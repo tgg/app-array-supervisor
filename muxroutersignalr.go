@@ -19,21 +19,35 @@ type MuxRouterSignalR struct {
 }
 
 func (router *MuxRouterSignalR) HandleFunc(path string, f func(w http.ResponseWriter, r *http.Request)) {
-	router.NewRoute().Path(path).HandlerFunc(f)
+	router.HandleFuncRoute(path, f)
+}
+
+func (router *MuxRouterSignalR) HandleFuncRoute(path string, f func(w http.ResponseWriter, r *http.Request)) *mux.Route {
+	route := router.NewRoute().Path(path).HandlerFunc(f)
 	router.paths = append(router.paths, path)
 	log.Printf("Route %s registered\n", path)
+	return route
 }
 
 func (router *MuxRouterSignalR) Handle(path string, handler http.Handler) {
-	router.NewRoute().Path(path).Handler(handler)
+	router.HandleRoute(path, handler)
+}
+
+func (router *MuxRouterSignalR) HandleRoute(path string, handler http.Handler) *mux.Route {
+	route := router.NewRoute().Path(path).Handler(handler)
 	router.paths = append(router.paths, path)
 	log.Printf("Route %s registered\n", path)
+	return route
 }
 
 func WithMuxRouter(router *MuxRouterSignalR) func() signalr.MappableRouter {
 	return func() signalr.MappableRouter {
 		return router
 	}
+}
+
+func (router *MuxRouterSignalR) AddStaticFiles() {
+	router.PathPrefix("/app-array/").Handler(http.StripPrefix("/app-array/", http.FileServer(http.Dir("./build/"))))
 }
 
 func (router *MuxRouterSignalR) AddHandledFunctions() {

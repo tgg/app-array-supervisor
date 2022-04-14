@@ -1,12 +1,13 @@
 package main
 
 import (
-	"github.com/gorilla/mux"
-	"github.com/rs/cors"
-	"github.com/tebeka/atexit"
 	"log"
 	"net/http"
 	"os"
+
+	"github.com/gorilla/mux"
+	"github.com/rs/cors"
+	"github.com/tebeka/atexit"
 )
 
 func disconnectedClients() {
@@ -40,9 +41,11 @@ func main() {
 	getAppArrayContext().SetRouter(router)
 	log.Println("Context configured")
 
+	serverCRT := os.Getenv("SERVER_CRT")
+	serverKEY := os.Getenv("SERVER_KEY")
 	listeningHost := "0.0.0.0:" + os.Getenv("LISTEN_PORT")
 	log.Printf("Listening for websocket connections on %s\n", listeningHost)
-	if err := http.ListenAndServe(listeningHost, handler); err != nil {
+	if err := http.ListenAndServeTLS(listeningHost, serverCRT, serverKEY, handler); err != nil {
 		log.Fatal("ListenAndServe:", err)
 	}
 	atexit.Register(disconnectedClients)

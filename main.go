@@ -43,20 +43,20 @@ func main() {
 
 	USE_SSL := os.Getenv("USE_SSL")
 	listeningHost := "0.0.0.0:" + os.Getenv("LISTEN_PORT")
-	if(USE_SSL=="Y"){
+	if USE_SSL == "Y" {
 		serverCRT := os.Getenv("SERVER_CRT")
 		serverKEY := os.Getenv("SERVER_KEY")
-		log.Printf("Listening for websocket connections on %s\n", listeningHost)
+		log.Printf("Listening for secured websocket connections on %s\n", listeningHost)
 		if err := http.ListenAndServeTLS(listeningHost, serverCRT, serverKEY, handler); err != nil {
-			log.Fatal("ListenAndServe:", err)
+			log.Fatal("ListenAndServeTLS:", err)
 		}
-	}else{
-		listeningHost := "0.0.0.0:" + os.Getenv("LISTEN_PORT")
+	} else {
+		log.Printf("Listening for websocket connections on %s\n", listeningHost)
 		if err := http.ListenAndServe(listeningHost, handler); err != nil {
 			log.Fatal("ListenAndServe:", err)
 		}
 	}
-	
+
 	atexit.Register(disconnectedClients)
 	atexit.Exit(0)
 }

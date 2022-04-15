@@ -1,0 +1,30 @@
+FROM node:16 as node_builder
+ENV REACT_APP_BACKEND_HOST=http://localhost:8080
+RUN mkdir /app
+WORKDIR /app
+COPY ["app-array/package.json", "app-array/package-lock.json*", "./"]
+RUN npm install
+ADD app-array ./
+RUN npm run build
+
+FROM golang as builder
+WORKDIR /go/src/github.com/user/app
+COPY . .
+RUN set -x && \
+    go get -d -v . && \
+    CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o app .
+
+# Docker run Golang app
+FROM alpine
+ENV LISTEN_PORT=8443
+ENV SERVER_CRT=/app/domain.crt
+ENV SERVER_KEY=/app/domain.key
+ENV USE_SSL=Y
+RUN apk update && apk add openssl
+RUN mkdir -p /app/build
+WORKDIR /app
+RUN openssl req -newkey rsa:2048 -nodes -keyout domain.key -x509 -days 365 -out domain.crt -subj "/C=FR/ST=Paris/L=Paris/O=AppArray/OU=IT/CN=app-array@example.com"
+COPY --from=builder /go/src/github.com/user/app/app .
+COPY --from=node_builder /app/build ./build
+EXPOSE $LISTEN_PORT
+CMD ["./app"]

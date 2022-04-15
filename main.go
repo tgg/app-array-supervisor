@@ -41,13 +41,22 @@ func main() {
 	getAppArrayContext().SetRouter(router)
 	log.Println("Context configured")
 
-	serverCRT := os.Getenv("SERVER_CRT")
-	serverKEY := os.Getenv("SERVER_KEY")
+	USE_SSL := os.Getenv("USE_SSL")
 	listeningHost := "0.0.0.0:" + os.Getenv("LISTEN_PORT")
-	log.Printf("Listening for websocket connections on %s\n", listeningHost)
-	if err := http.ListenAndServeTLS(listeningHost, serverCRT, serverKEY, handler); err != nil {
-		log.Fatal("ListenAndServe:", err)
+	if(USE_SSL=="Y"){
+		serverCRT := os.Getenv("SERVER_CRT")
+		serverKEY := os.Getenv("SERVER_KEY")
+		log.Printf("Listening for websocket connections on %s\n", listeningHost)
+		if err := http.ListenAndServeTLS(listeningHost, serverCRT, serverKEY, handler); err != nil {
+			log.Fatal("ListenAndServe:", err)
+		}
+	}else{
+		listeningHost := "0.0.0.0:" + os.Getenv("LISTEN_PORT")
+		if err := http.ListenAndServe(listeningHost, handler); err != nil {
+			log.Fatal("ListenAndServe:", err)
+		}
 	}
+	
 	atexit.Register(disconnectedClients)
 	atexit.Exit(0)
 }

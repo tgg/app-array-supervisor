@@ -9,6 +9,8 @@ import (
 	"log"
 	"strings"
 	"sync"
+	"os/exec"
+	"runtime"
 )
 
 type AppArrayHub struct {
@@ -56,6 +58,7 @@ func (h *AppArrayHub) OnConnected(string) {
 			h.InitializeConnections()
 		}
 	}
+
 }
 
 func (h *AppArrayHub) RunCommand(cmd string, client *ssh.Client) (int, string) {
@@ -82,6 +85,29 @@ func (h *AppArrayHub) RunCommand(cmd string, client *ssh.Client) (int, string) {
 
 	buf := new(strings.Builder)
 	io.Copy(buf, stdout)
+	return res, buf.String()
+}
+// open browser with url
+func (h *AppArrayHub) OpenUrl(url string) (int, string) {
+	var err error
+	res := 0
+	
+	switch runtime.GOOS {
+	case "linux":
+		err = exec.Command("xdg-open", url).Start()
+	case "windows":
+		err = exec.Command("rundll32", "url.dll,FileProtocolHandler", url).Start()
+	case "darwin":
+		err = exec.Command("open", url).Start()
+	default:
+		err = fmt.Errorf("unsupported platform")
+	}
+	if err != nil {
+		res = 1
+	}
+	
+	buf := new(strings.Builder)
+
 	return res, buf.String()
 }
 
@@ -113,6 +139,9 @@ func (h *AppArrayHub) SendCommand(message string) {
 			if req.CommandId == model.CommandDownload {
 				status, res, filename = h.DownloadFile(req.Command, client)
 				h.SendResponseCaller(NewCommandDownloadResponse(status, res, filename, req), CommandResultListener)
+			} else if req.CommandId == model.CommandWebsite {
+				status, res = h.OpenUrl(req.Command)
+				h.SendResponseCaller(NewCommandResponse(status, res, req), CommandResultListener)
 			} else {
 				status, res = h.RunCommand(req.Command, client)
 				h.SendResponseCaller(NewCommandResponse(status, res, req), CommandResultListener)

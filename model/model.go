@@ -30,6 +30,8 @@ const (
 	CommandStop     = "stop"
 	CommandStatus   = "status"
 	CommandDownload = "download"
+	CommandWebsite  = "website"
+	CommandTerminal = "terminal"
 )
 
 type Command struct {

@@ -9,6 +9,8 @@ import (
 	"log"
 	"strings"
 	"sync"
+	"os/exec"
+	"runtime"
 )
 
 type AppArrayHub struct {
@@ -56,6 +58,7 @@ func (h *AppArrayHub) OnConnected(string) {
 			h.InitializeConnections()
 		}
 	}
+
 }
 
 func (h *AppArrayHub) RunCommand(cmd string, client *ssh.Client) (int, string) {
@@ -83,6 +86,110 @@ func (h *AppArrayHub) RunCommand(cmd string, client *ssh.Client) (int, string) {
 	buf := new(strings.Builder)
 	io.Copy(buf, stdout)
 	return res, buf.String()
+}
+// open browser with url
+func (h *AppArrayHub) OpenUrl(url string, client *ssh.Client) (int, string) {
+	session, err := client.NewSession()
+	//var err error
+	res := 0
+	if err != nil {
+		log.Printf("Failed to create session: %v\n", err)
+		return 1,""
+	}
+	defer session.Close()
+
+	stdout, err := session.StdoutPipe()
+	if err != nil {
+		log.Printf("Unable to setup stdout for session: %v\n", err)
+		return 1,""
+	}
+
+	switch runtime.GOOS {
+	case "linux":
+		if err := session.Run("xdg-open " + url); err != nil {
+			log.Printf("Error running command: %v", err)
+			if sshErr, isExitError := err.(*ssh.ExitError); isExitError {
+				res = sshErr.ExitStatus()
+			}
+		}
+		err = exec.Command("xdg-open", url).Start()
+	case "windows":
+		if err := session.Run("rundll32, url.dll,FileProtocolHandler " + url); err != nil {
+			log.Printf("Error running command: %v", err)
+			if sshErr, isExitError := err.(*ssh.ExitError); isExitError {
+				res = sshErr.ExitStatus()
+			}
+		}
+		err = exec.Command("rundll32", "url.dll,FileProtocolHandler", url).Start()
+	case "darwin":
+		if err := session.Run("open " + url); err != nil {
+			log.Printf("Error running command: %v", err)
+			if sshErr, isExitError := err.(*ssh.ExitError); isExitError {
+				res = sshErr.ExitStatus()
+			}
+		}
+		err = exec.Command("open", url).Start()
+	default:
+		err = fmt.Errorf("unsupported platform")
+	}
+	if err != nil {
+		res = 1
+	}
+	
+	buf := new(strings.Builder)
+	io.Copy(buf, stdout)
+	return res, buf.String()
+}
+
+// Open a terminal
+func (h *AppArrayHub) OpenTerminal(url string, client *ssh.Client) (int,string) {
+	session, err := client.NewSession()
+	res := 0
+
+	if err != nil {
+		log.Printf("Failed to create session: %v\n", err)
+		return 1,""
+	}
+	defer session.Close()
+
+	stdout, err := session.StdoutPipe()
+	if err != nil {
+		log.Printf("Unable to setup stdout for session: %v\n", err)
+		return 1,""
+	}
+
+	switch runtime.GOOS {
+	case "linux":
+		if err := session.Run("cd " + url); err != nil {
+			log.Printf("Error running command: %v", err)
+			if sshErr, isExitError := err.(*ssh.ExitError); isExitError {
+				res = sshErr.ExitStatus()
+			}
+		}
+		err = exec.Command("cd",url).Start()
+	case "windows":
+		if err := session.Run("cmd.exe /c start cd " + url); err != nil {
+			log.Printf("Error running command: %v", err)
+			if sshErr, isExitError := err.(*ssh.ExitError); isExitError {
+				res = sshErr.ExitStatus()
+			}
+		}
+		err = exec.Command("cmd.exe","/c","start","cd",url).Start()
+	default:
+		err = fmt.Errorf("unsupported command-line")
+	}
+
+	if err != nil {
+		log.Fatal(err)
+		res = 1
+	}
+	for i := 0; i < 100; i++{
+		log.Println(i)
+	}
+
+	buf := new(strings.Builder)
+	io.Copy(buf, stdout)
+	return res,buf.String()
 }
 
 func (h *AppArrayHub) DownloadFile(path string, client *ssh.Client) (int, string, string) {
@@ -113,6 +220,12 @@ func (h *AppArrayHub) SendCommand(message string) {
 			if req.CommandId == model.CommandDownload {
 				status, res, filename = h.DownloadFile(req.Command, client)
 				h.SendResponseCaller(NewCommandDownloadResponse(status, res, filename, req), CommandResultListener)
+			} else if req.CommandId == model.CommandWebsite {
+				status, res = h.OpenUrl(req.Command,client)
+				h.SendResponseCaller(NewCommandResponse(status, res, req), CommandResultListener)
+			} else if req.CommandId == model.CommandTerminal {
+				status, res = h.OpenTerminal(req.Command,client)
+				h.SendResponseCaller(NewCommandResponse(status, res, req), CommandResultListener)
 			} else {
 				status, res = h.RunCommand(req.Command, client)
 				h.SendResponseCaller(NewCommandResponse(status, res, req), CommandResultListener)
